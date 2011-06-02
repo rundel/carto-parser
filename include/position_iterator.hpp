@@ -10,12 +10,19 @@
 #define POSITION_ITERATOR_H
 
 #include <sstream>
+#include <vector>
 
 #include <boost/detail/iterator.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/range/iterator_range.hpp>
 
 namespace carto {
+
+struct source_location;
+
+typedef std::pair<source_location, int> annotation_type;
+typedef std::vector< annotation_type > annotations_type;
+
 
 struct source_location {
 

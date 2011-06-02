@@ -11,7 +11,6 @@
 #include <iosfwd>
 #include <sstream>
 
-#include <config.hpp>
 #include <parse/parse_tree.hpp>
 #include <parse/json_grammar.hpp>
 

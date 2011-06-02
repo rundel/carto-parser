@@ -80,6 +80,14 @@ public:
         return _annotations;
     }
 
+    annotation_type& annotations (int i) {
+        return _annotations[i];
+    }
+
+    annotation_type const& annotations (int i) const {
+        return _annotations[i];
+    }
+
     bool operator== (parse_tree const& other) const {
         return equal(other);
     }

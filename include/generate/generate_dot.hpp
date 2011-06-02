@@ -11,7 +11,6 @@
 #include <iosfwd>
 #include <sstream>
 
-#include <config.hpp>
 #include <parse/parse_tree.hpp>
 #include <parse/json_grammar.hpp>
 
@@ -78,6 +77,7 @@ struct dot_printer {
                     end   = ut.end();
                     n_id += ut.size();
                 } else {
+                    BOOST_ASSERT(false);
                     return;
                 }
                 
@@ -97,19 +97,6 @@ struct dot_printer {
 
         utree::visit(ut, *this);
     }
-
-
-    /*void print_key (utree const& ut){
-        typedef spirit::utf8_symbol_range_type::const_iterator iterator;
-
-        spirit::utf8_symbol_range_type range = ut.get<spirit::utf8_symbol_range_type>();
-
-        iterator it = range.begin(), end = range.end();
-
-        out << '"';
-        for (; it != end; ++it) out << *it;
-        out << '"';
-    }*/
 
     template<class T>
     void operator() (T val){

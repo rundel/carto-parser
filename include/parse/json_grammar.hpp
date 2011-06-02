@@ -87,13 +87,13 @@ struct json_parser : qi::grammar< Iterator, utree(), space_type>
         null = "null" >> qi::attr(spirit::nil); 
 
         object %= '{' >> (member_pair % ',') > '}'
-            > annotate(_val, json_object);
+                > annotate(_val, json_object);
 
         member_pair %= '"' > as_symbol[member] > '"' > ':' > value
-            > annotate(_val, json_pair);//node_type::pair);
+                     > annotate(_val, json_pair);//node_type::pair);
     
         array %= '[' >> (value % ',') > ']'
-            > annotate(_val, json_array);
+               > annotate(_val, json_array);
 
         std::string exclude = std::string(" {}[]:\"\x01-\x1f\x7f") + '\0';
         member = lexeme[+(~char_(exclude))];
