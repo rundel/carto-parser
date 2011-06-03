@@ -74,6 +74,20 @@ struct utree_to_string {
     }
 };
 
+namespace detail {
+
+    template<class T>
+    T as(utree& ut) {
+        return ut.get<T>();
+    }
+
+    template<>
+    std::string as<std::string>(utree& ut) 
+    {    
+        return utree::visit(ut, utree_to_string());
+    }
+}
+
 }
 
 #endif

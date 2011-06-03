@@ -5,7 +5,7 @@ INCLUDE = -I./include `pkg-config --cflags mapnik2 freetype2`
 
 DEFINES = -DHAVE_JPEG -DBOOST_REGEX_HAS_ICU -DDARWIN -DBOOST_SPIRIT_THREADSAFE -DMAPNIK_THREADSAFE -DNDEBUG
 
-CXXFLAGS = $(DEFINES) $(INCLUDE) -Wall
+CXXFLAGS = $(DEFINES) $(INCLUDE) -Wall -g
 
 LIBS = -lmapnik2 -lboost_thread-mt -lboost_regex-mt -licuuc
 

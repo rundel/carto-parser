@@ -16,6 +16,8 @@ int main(int argc, char **argv) {
     using carto::generate_json;
     using carto::generate_dot;
     
+    std::string mapnik_dir = "/usr/local/lib/mapnik2/";
+    mapnik::datasource_cache::instance()->register_datasources(mapnik_dir + "input/"); 
     
     char const* filename;
     if (argc > 1) {
@@ -39,8 +41,8 @@ int main(int argc, char **argv) {
     mapnik::Map m(800,600);
     
 
-    carto::mml_parser parser(in, filename);
-    parser.parse_map(m, false);
+    carto::mml_parser parser(in, false, filename);
+    parser.parse_map(m);
     
     parse_tree pt = parser.get_parse_tree();
     

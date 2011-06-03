@@ -16,48 +16,46 @@
 
 #include <mapnik/map.hpp>
 #include <mapnik/layer.hpp>
+#include <mapnik/config_error.hpp>
+#include <mapnik/params.hpp>
+#include <mapnik/datasource.hpp>
+#include <mapnik/datasource_cache.hpp>
 
 #include "utree/utree_utility.hpp"
 
 namespace carto {
 
-namespace detail {
-    template<class T>
-    T as(utree& ut) {
-        return ut.get<T>();
-    }
-    
-    template<>
-    std::string as<std::string>(utree& ut) 
-    {    
-        return utree::visit(ut, utree_to_string());
-    }
-}
+using mapnik::config_error;
 
 struct mml_parser {
-    typedef void result_type;
 
     parse_tree tree;
+    bool strict;
     std::string path;
     
-    mml_parser(parse_tree const& pt, std::string const& path_ = "./")
+    mml_parser(parse_tree const& pt, bool strict_ = false, std::string const& path_ = "./")
       : tree(pt),
+        strict(strict_),
         path(path_) { }
       
-    mml_parser(std::string const& in, std::string const& path_ = "./")
+    mml_parser(std::string const& in, bool strict_ = false, std::string const& path_ = "./")
       : tree(in),
+        strict(strict_),
         path(path_) { }
     
     template<class T>
-    T as(utree& ut) {
+    T as(utree& ut)
+    {
         return detail::as<T>(ut);
     }
     
-    parse_tree get_parse_tree() {
+    parse_tree get_parse_tree()
+    {
         return tree;
     }
     
-    std::string get_path() {
+    std::string get_path()
+    {
         return path;
     }
     
@@ -71,7 +69,7 @@ struct mml_parser {
         return tree.annotations()[ut.tag()].first;
     }
 
-    void parse_map(mapnik::Map& map, bool strict = false)
+    void parse_map(mapnik::Map& map)
     {
         using spirit::utree_type;
         typedef utree::iterator iter;
@@ -81,28 +79,22 @@ struct mml_parser {
         
         BOOST_ASSERT(get_node_type(root_node) == json_object);
         
-        
-        iter it, end;
-        
-        it  = root_node.front().begin(); 
-        end = root_node.front().end();
+        iter it = root_node.front().begin(),
+            end = root_node.front().end();
         
         for (; it != end; ++it) {
             try {
                 BOOST_ASSERT((*it).size()==2);
             
-                utree& key = (*it).front();
+                std::string key = as<std::string>((*it).front());
                 utree& value = (*it).back();  
             
-                if (key == utree(spirit::utf8_symbol_type("srs"))) {
-
+                if (key == "srs") {
                     map.set_srs( as<std::string>(value) );
+                } else if (key == "Stylesheet") {
                 
-                } else if (key == utree(spirit::utf8_symbol_type("Stylesheet"))) {
-                
-                } else if (key == utree(spirit::utf8_symbol_type("Layer"))) {
-                
-                    BOOST_ASSERT(get_node_typevalue == json_array);
+                } else if (key == "Layer") {
+                    BOOST_ASSERT(get_node_type(value) == json_array);
                 
                     iter lyr_it  = value.begin(), 
                          lyr_end = value.end();
@@ -111,17 +103,12 @@ struct mml_parser {
                         BOOST_ASSERT(get_node_type(*lyr_it) == json_object);
                         parse_layer(map, (*lyr_it).front()) ;
                     }
-                
                 } else {
-                    throw "Unknown keyword: "+as<std::string>(key);
+                    throw config_error(std::string("Unknown keyword: ")+key);
                 }
             } catch (std::exception& e) {
                 std::cerr << "Error: " << e.what() << " at " << get_location(*it).get_string() << "\n";
                 
-                if (strict) break;
-            } catch (std::string& s) {
-                std::cerr << "Error: " << s << " at " << get_location(*it).get_string() << "\n";
-
                 if (strict) break;
             } catch (...) {
                 std::cerr << "Error: Unknown error at " << get_location(*it).get_string() << "\n";
@@ -133,8 +120,6 @@ struct mml_parser {
     
     void parse_layer(mapnik::Map& map, utree node)
     {
-        using spirit::utree_type;
-        
         mapnik::layer lyr("","");
         
         typedef utree::iterator iter;
@@ -142,54 +127,93 @@ struct mml_parser {
              end = node.end();
         
         for (; it != end; ++it) {
-            BOOST_ASSERT((*it).size()==2);
+            try {
+                BOOST_ASSERT((*it).size()==2);
             
-            utree& key   = (*it).front();
-            utree& value = (*it).back();
+                std::string key = as<std::string>((*it).front());
+                utree& value = (*it).back();
             
-            if (key == utree(spirit::utf8_symbol_type("id"))) {
+                if (key == "id") {
                 
-            } else if (key == utree(spirit::utf8_symbol_type("Datasource"))) {
-
-            } else if (key == utree(spirit::utf8_symbol_type("name"))) {
+                } else if (key == "name") {
+                    lyr.set_name( as<std::string>(value) );
+                } else if (key == "srs") {
+                    lyr.set_srs( as<std::string>(value) );
+                } else if (key == "status") {
+                    lyr.setActive( as<bool>(value) );
+                } else if (key == "title") {
+                    lyr.set_title( as<std::string>(value) );
+                } else if (key == "abstract") {
+                    lyr.set_abstract( as<std::string>(value) );
+                } else if (key == "minzoom") {
+                    lyr.setMinZoom( value.get<double>() );
+                } else if (key == "maxzoom") {
+                    lyr.setMaxZoom( value.get<double>() );
+                } else if (key == "queryable") {
+                    lyr.setQueryable( value.get<bool>() );
+                } else if (key == "Datasource") {
+                    BOOST_ASSERT(get_node_type(value) == json_object);
                 
-                lyr.set_name( as<std::string>(value) );
+                    parse_Datasource(lyr, value.front());
                 
-            } else if (key == utree(spirit::utf8_symbol_type("srs"))) {
-                
-                lyr.set_srs( as<std::string>(value) );
-                
-            } else if (key == utree(spirit::utf8_symbol_type("status"))) {
-            
-            } else if (key == utree(spirit::utf8_symbol_type("title"))) {
-                
-                lyr.set_title( as<std::string>(value) );
-                
-            } else if (key == utree(spirit::utf8_symbol_type("abstract"))) {
-                                        
-                lyr.set_abstract( as<std::string>(value) );
-                
-            } else if (key == utree(spirit::utf8_symbol_type("minzoom"))) {
-                
-                lyr.setMinZoom( value.get<double>() );
-                
-            } else if (key == utree(spirit::utf8_symbol_type("maxzoom"))) {
-                
-                lyr.setMaxZoom( value.get<double>() );
-            
-            } else if (key == utree(spirit::utf8_symbol_type("queryable"))) {
-            
-                lyr.setQueryable( value.get<bool>() );
-            
-            } else {
-                throw "Unknown keyword: "+as<std::string>(key);
+                } else {
+                    throw config_error(std::string("Unknown keyword: ")+key);
+                }
+            } catch (std::exception& e) {
+                throw config_error( e.what() );
+            } catch (...) {
+                throw config_error( "Unknown error" );
             }
         }
         
         map.addLayer(lyr);
     }
+
+
+    void parse_Datasource(mapnik::layer& lyr, utree node)
+    {
+        mapnik::parameters params;
+        
+        typedef utree::iterator iter;
+        iter it  = node.begin(), 
+             end = node.end();
+        
+        for (; it != end; ++it)
+        {
+            BOOST_ASSERT((*it).size()==2);
+
+            std::string name  = as<std::string>((*it).front());
+            std::string value = as<std::string>((*it).back());
+            
+            params[name] = value;
+        }
+
+        //boost::optional<std::string> base_param = params.get<std::string>("base");
+        //boost::optional<std::string> file_param = params.get<std::string>("file");
+        //
+        //if (base_param) {
+        //    params["base"] = ensure_relative_to_xml(base_param);
+        //} else if (file_param) {
+        //    params["file"] = ensure_relative_to_xml(file_param);
+        //}
+
+        try {
+            boost::shared_ptr<mapnik::datasource> ds =
+                mapnik::datasource_cache::instance()->create(params);
+            lyr.set_datasource(ds);
+        } catch (const mapnik::config_error & ex ) {
+            throw config_error( ex.what() );
+        } catch (const mapnik::datasource_exception & ex ) {
+            throw config_error( ex.what() );
+        } catch (...) {
+            throw config_error("Unknown exception");
+        }
+    }
     
 };
+
+
+
 
 void load_mml(mapnik::Map& map, char const* filename, bool strict)
 {
@@ -204,14 +228,14 @@ void load_mml(mapnik::Map& map, char const* filename, bool strict)
          std::istream_iterator<char>(),
          std::back_inserter(in));
 
-    carto::mml_parser parser(in, filename);
-    parser.parse_map(map, strict);
+    carto::mml_parser parser(in, strict, filename);
+    parser.parse_map(map);
 }
 
 void load_mml_string(mapnik::Map& map, std::string const& in, bool strict, std::string const& base_url)
 {
-    carto::mml_parser parser(in, base_url);
-    parser.parse_map(map, strict);
+    carto::mml_parser parser(in, strict, base_url);
+    parser.parse_map(map);
 }
 
 }
