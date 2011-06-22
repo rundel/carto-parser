@@ -1,0 +1,63 @@
+{
+    "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+    "Stylesheet": [
+        "style.mss"
+    ],
+    "Layer": [
+        {
+            "id": "provinces",
+            "name": "Provinces",
+            "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+            "Datasource": {
+                "file": "/Users/rundel/Desktop/Summer of Code 2011/data/boundaries",
+                "type": "shape"
+            }
+        },
+        {
+            "id": "quebec_hydrography",
+            "name": "Quebec Hydrography",
+            "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+            "Datasource": {
+                "file": "/Users/rundel/Desktop/Summer of Code 2011/data/qcdrainage",
+                "type": "shape"
+            }
+        },
+        {
+            "id": "ontario_hydrography",
+            "name": "Ontario Hydrography",
+            "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+            "Datasource": {
+                "file": "/Users/rundel/Desktop/Summer of Code 2011/data/ontdrainage",
+                "type": "shape"
+            }
+        },
+        {
+            "id": "provincial_borders",
+            "name": "Provincial borders",
+            "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+            "Datasource": {
+                "file": "/Users/rundel/Desktop/Summer of Code 2011/data/boundaries_l",
+                "type": "shape"
+            }
+        },
+        {
+            "id": "roads",
+            "name": "Roads",
+            "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+            "Datasource": {
+                "file": "/Users/rundel/Desktop/Summer of Code 2011/data/roads",
+                "type": "shape"
+            }
+        },
+        {
+            "id": "populated_places",
+            "name": "Populated Places",
+            "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+            "Datasource": {
+                "encoding": "latin1",
+                "file": "/Users/rundel/Desktop/Summer of Code 2011/data/popplaces",
+                "type": "shape"
+            }
+        }
+    ]
+}
