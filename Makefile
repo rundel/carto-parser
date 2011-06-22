@@ -7,7 +7,7 @@ DEFINES = -DHAVE_JPEG -DBOOST_REGEX_HAS_ICU -DDARWIN -DBOOST_SPIRIT_THREADSAFE -
 
 CXXFLAGS = $(DEFINES) $(INCLUDE) -Wall -g
 
-LIBS = -lmapnik2 -lboost_thread-mt -lboost_regex-mt -licuuc
+LIBS = -lmapnik2 -lboost_thread-mt -lboost_regex-mt -lboost_filesystem-mt -lboost_system-mt -licuuc
 
 
 SRC = $(wildcard *.cpp)

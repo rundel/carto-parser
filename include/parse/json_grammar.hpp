@@ -114,6 +114,14 @@ struct json_parser : qi::grammar< Iterator, utree(), space_type>
         empty_array.name(name + ":empty-array");
  
         on_error<fail>(start, error(_3, _4));
+        
+        BOOST_SPIRIT_DEBUG_NODE( start );
+        BOOST_SPIRIT_DEBUG_NODE( value );
+        BOOST_SPIRIT_DEBUG_NODE( object );
+        BOOST_SPIRIT_DEBUG_NODE( member_pair );
+        
+        
+        
     }
 };
 

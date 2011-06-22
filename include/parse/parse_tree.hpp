@@ -44,7 +44,7 @@ public:
     { 
         typedef position_iterator<std::string::const_iterator> iterator_type;
         
-        //FIXME
+        //FIXME - std::string should be source or something
         json_parser<iterator_type> p("std::string", _annotations);
 
         iterator_type first(in.begin());

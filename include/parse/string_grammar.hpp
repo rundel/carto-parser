@@ -78,7 +78,7 @@ struct push_esc_functor {
 
 ///////////////////////////////////////////////////////////////////////////////
 template<class Iterator>
-struct utf8_string_parser: qi::grammar<Iterator, std::string()> {
+struct utf8_string_parser : qi::grammar<Iterator, std::string()> {
     
     
     typedef error_handler_impl<Iterator> error_handler_type;
@@ -118,7 +118,7 @@ struct utf8_string_parser: qi::grammar<Iterator, std::string()> {
               > *(escaped(_val) | (~char_('"')) [_val += _1])
               > '"';
     
-        std::string name = "mml";
+        std::string name = "utf8";
     
         start.name(name + ":utf8-string");
         escaped.name(name + ":escaped-utf8-string");

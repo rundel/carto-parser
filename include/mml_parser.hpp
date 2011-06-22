@@ -215,7 +215,7 @@ struct mml_parser {
 
 
 
-void load_mml(mapnik::Map& map, char const* filename, bool strict)
+mml_parser load_mml(char const* filename, bool strict)
 {
     std::ifstream file(filename, std::ios_base::in);
 
@@ -228,15 +228,15 @@ void load_mml(mapnik::Map& map, char const* filename, bool strict)
          std::istream_iterator<char>(),
          std::back_inserter(in));
 
-    carto::mml_parser parser(in, strict, filename);
-    parser.parse_map(map);
+    return mml_parser(in, strict, filename);
 }
 
-void load_mml_string(mapnik::Map& map, std::string const& in, bool strict, std::string const& base_url)
+/*
+mml_parser load_mml_string(std::string const& in, bool strict, std::string const& base_url)
 {
-    carto::mml_parser parser(in, strict, base_url);
-    parser.parse_map(map);
+    return mml_parser(in, strict, base_url);
 }
+*/
 
 }
 #endif 

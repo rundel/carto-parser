@@ -66,27 +66,25 @@ struct dot_printer {
                     it    = ut.front().begin();
                     end   = ut.front().end();
                     n_id += ut.front().size();
-                } else if (annotations[ut.tag()].second == json_array) {
-                    out << prefix << id << " [label=\"[array]\"];\n"; 
-                    it    = ut.begin();
-                    end   = ut.end();
-                    n_id += ut.size();
-                } else if (annotations[ut.tag()].second == json_pair) {
-                    out << prefix << id << " [label=\"[pair]\"];\n"; 
-                    it    = ut.begin();
-                    end   = ut.end();
-                    n_id += ut.size();
                 } else {
-                    BOOST_ASSERT(false);
-                    return;
+                    if (annotations[ut.tag()].second == json_array) {
+                        out << prefix << id << " [label=\"[array]\"];\n"; 
+                    } else if (annotations[ut.tag()].second == json_pair) {
+                        out << prefix << id << " [label=\"[pair]\"];\n"; 
+                    } else {
+                        BOOST_ASSERT(false);
+                        return;
+                    }
+                    it    = ut.begin();
+                    end   = ut.end();
+                    n_id += ut.size();
                 }
                 
                 for (int i=0; it != end; ++it, ++i) {
                     
                     cur_id = start_id+i; 
                     out << prefix << id << " -> " << prefix << cur_id << ";\n";
-                    (*this)(*it);
-                    
+                    (*this)(*it);   
                 }
                 
                 return;
