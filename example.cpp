@@ -36,8 +36,8 @@ int main(int argc, char **argv) {
     using carto::generate_dot;
     using boost::filesystem::path;
     
-    std::string mapnik_dir = "/usr/local/lib/mapnik2/";
-    mapnik::datasource_cache::instance()->register_datasources(mapnik_dir + "input/"); 
+    std::string mapnik_dir = MAPNIKDIR;
+    mapnik::datasource_cache::instance()->register_datasources(mapnik_dir + "/lib/mapnik2/input/"); 
     
     char const* filename;
     path p;
@@ -128,8 +128,8 @@ int main(int argc, char **argv) {
         utree ast;    
         carto::annotations_type annotations;
         
-        //typedef position_iterator<std::string::const_iterator> iterator_type;
-        typedef std::string::const_iterator iterator_type;
+        typedef position_iterator<std::string::const_iterator> iterator_type;
+        //typedef std::string::const_iterator iterator_type;
         
         
         carto::carto_parser<iterator_type> p("file", annotations);

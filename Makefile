@@ -3,7 +3,9 @@ CXX = clang++
 
 INCLUDE = -I./include `pkg-config --cflags mapnik2 freetype2`
 
-DEFINES = -DHAVE_JPEG -DBOOST_REGEX_HAS_ICU -DDARWIN -DBOOST_SPIRIT_THREADSAFE -DMAPNIK_THREADSAFE -DNDEBUG
+#DEFINES = -DHAVE_JPEG -DBOOST_REGEX_HAS_ICU -DDARWIN -DBOOST_SPIRIT_THREADSAFE -DMAPNIK_THREADSAFE -DNDEBUG
+DEFINES = -DBOOST_REGEX_HAS_ICU -DNDEBUG -DMAPNIKDIR=\"`pkg-config --variable=prefix mapnik2`\"
+
 
 CXXFLAGS = $(DEFINES) $(INCLUDE) -Wall -g
 
@@ -11,7 +13,6 @@ LIBS = -lmapnik2 -lboost_thread-mt -lboost_regex-mt -lboost_filesystem-mt -lboos
 
 
 SRC = $(wildcard *.cpp)
-#gen_building_sym.cpp gen_font_set.cpp rundemo.cpp
 
 OBJ = $(SRC:.cpp=.o)
 

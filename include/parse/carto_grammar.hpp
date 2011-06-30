@@ -116,7 +116,7 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
                      > annotate(_val, carto_attribute);
         
         style_name = lexeme[-char_("#.") >> name];
-        filter %= lit("[") >> *(char_-"]") > "]"
+        filter %= lit("[") >> lexeme[*(char_-"]")] > "]"
                   > annotate(_val, carto_filter);
         
         style %= as_symbol[-style_name] >> -filter >> "{" >> (*element) >> "}"
