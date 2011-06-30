@@ -5,19 +5,19 @@
     file BOOST_LICENSE_1_0.rst or copy at http://www.boost.org/LICENSE_1_0.txt)
 ==============================================================================*/
 
-#ifndef GENERATE_JSON_DOT_H
-#define GENERATE_JSON_DOT_H
+#ifndef GENERATE_MSS_DOT_H
+#define GENERATE_MSS_DOT_H
 
 #include <iosfwd>
 #include <sstream>
 
 #include <parse/parse_tree.hpp>
-#include <parse/json_grammar.hpp>
+#include <parse/carto_grammar.hpp>
 
 namespace carto {
 
 template<class Out>
-struct json_dot_printer {
+struct mss_dot_printer {
     typedef void result_type;
 
     Out& out;
@@ -25,7 +25,7 @@ struct json_dot_printer {
     int n_id,cur_id;
     std::string prefix;
 
-    json_dot_printer (Out& out_, annotations_type const& annotations_)
+    mss_dot_printer (Out& out_, annotations_type const& annotations_)
       : out(out_), 
         annotations(annotations_),
         n_id(0),
@@ -61,24 +61,46 @@ struct json_dot_printer {
                 
                 int start_id = n_id;
                 
-                if (annotations[ut.tag()].second == json_object) {
+                /*if (annotations[ut.tag()].second == json_object) {
                     out << prefix << id << " [label=\"[object]\"];\n"; 
                     it    = ut.front().begin();
                     end   = ut.front().end();
                     n_id += ut.front().size();
-                } else {
-                    if (annotations[ut.tag()].second == json_array) {
-                        out << prefix << id << " [label=\"[array]\"];\n"; 
-                    } else if (annotations[ut.tag()].second == json_pair) {
-                        out << prefix << id << " [label=\"[pair]\"];\n"; 
-                    } else {
+                }*/
+                
+                out << prefix << id << " [label=\"[";
+                switch(annotations[ut.tag()].second) {
+                    case carto_variable:
+                        out << "variable";
+                        break;
+                    case carto_mixin:
+                        out << "mixin";
+                        break;
+                    case carto_style:
+                        out << "style";
+                        break;
+                    case carto_function:
+                        out << "function";
+                        break;
+                    case carto_attribute:
+                        out << "attribute";
+                        break;
+                    case carto_color:
+                        out << "color";
+                        break;
+                    case carto_filter:
+                        out << "filter";
+                        break;
+                    default:
+                        std::cout << annotations[ut.tag()].second << std::endl;
                         BOOST_ASSERT(false);
-                        return;
-                    }
-                    it    = ut.begin();
-                    end   = ut.end();
-                    n_id += ut.size();
+                        //return;
                 }
+                out << "]\"];\n";
+                
+                it    = ut.begin();
+                end   = ut.end();
+                n_id += ut.size();
                 
                 for (int i=0; it != end; ++it, ++i) {
                     
@@ -158,22 +180,22 @@ struct json_dot_printer {
 
 
 template<class Char>
-bool generate_dot( parse_tree const& in,
-                   std::basic_ostream<Char>& out)
+bool generate_mss_dot( utree const& ast, annotations_type const& annotations,
+                       std::basic_ostream<Char>& out)
 {
-    json_dot_printer<std::basic_ostream<Char> > printer(out, in.annotations());
-    printer.print(in.ast());
+    mss_dot_printer<std::basic_ostream<Char> > printer(out, annotations);
+    printer.print(ast);
     
     return true; 
 }
 
 template<class Char>
-bool generate_dot( parse_tree const& in,
-                   std::basic_string<Char>& out)
+bool generate_mss_dot( utree const& ast, annotations_type const& annotations,
+                       std::basic_string<Char>& out)
 {
     std::basic_stringstream<Char> oss;
-    json_dot_printer<std::basic_stringstream<Char> > printer(oss, in.annotations());
-    printer.print(in.ast());
+    mss_dot_printer<std::basic_stringstream<Char> > printer(oss, annotations);
+    printer.print(ast);
     
     out = oss.str();
     return true; 
@@ -181,4 +203,3 @@ bool generate_dot( parse_tree const& in,
 
 }
 #endif 
- 

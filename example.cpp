@@ -7,6 +7,7 @@
 #include <parse/json_grammar.hpp>
 #include <generate/generate_json.hpp>
 #include <generate/generate_json_dot.hpp>
+#include <generate/generate_mss_dot.hpp>
 
 #include <parse/carto_grammar.hpp>
 
@@ -34,6 +35,7 @@ int main(int argc, char **argv) {
     using carto::parse_tree;
     using carto::generate_json;
     using carto::generate_dot;
+    using carto::generate_mss_dot;
     using boost::filesystem::path;
     
     std::string mapnik_dir = MAPNIKDIR;
@@ -139,18 +141,31 @@ int main(int argc, char **argv) {
         
         try {
             bool r = boost::spirit::qi::phrase_parse(first, last, p, boost::spirit::ascii::space, ast);
-            if (!r)
+            if (!r) {
                 std::cout << "Parse failed\n";
-            else
-                std::cout << ast << std::endl;
-                
+                return 1;
+            }
         } catch (std::exception& e) {
             std::cerr << "Error: " << e.what() << "\n";
         } catch(...) {
             std::cerr << "Error: Unknown error\n";
         }
-
         
+        std::string output;
+        switch(out) {
+            case out_ast:
+                std::cout << ast;
+                break;
+            case out_xml:
+            case out_json:
+                //generate_json(pt,output);
+                std::cout << "Not currently supported";
+                break;
+            case out_dot:
+                generate_mss_dot(ast,annotations,output);
+                break;
+        }
+        std::cout << output << std::endl;
         
     } else {
         std::cout << "Error: " << filename << " has an invalid extension " << p.extension() << "\n";

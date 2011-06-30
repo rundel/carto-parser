@@ -66,7 +66,7 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
 
     qi::rule<Iterator, utree(), space_type> value, element, filter;
     qi::rule<Iterator, utree::list_type(), space_type> start, variable, attribute, style, color, mixin, function;
-    qi::rule<Iterator, utf8_symbol_type()> name, var_name, style_name;
+    qi::rule<Iterator, utf8_symbol_type()> name, var_name, style_name, filter_text;
     qi::rule<Iterator, utree::nil_type()> null;
 
     mapnik::css_color_grammar<Iterator> css_color;
@@ -116,7 +116,9 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
                      > annotate(_val, carto_attribute);
         
         style_name = lexeme[-char_("#.") >> name];
-        filter %= lit("[") >> lexeme[*(char_-"]")] > "]"
+        
+        filter_text = lexeme[*(char_-"]")];
+        filter %= lit("[") >> filter_text > "]"
                   > annotate(_val, carto_filter);
         
         style %= as_symbol[-style_name] >> -filter >> "{" >> (*element) >> "}"
@@ -152,6 +154,7 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
         value.name(base+":value");
         element.name(base+":element");
         filter.name(base+":filter");
+        filter_text.name(base+":filter_text");
         variable.name(base+":variable");
         attribute.name(base+":attribute");
         style.name(base+":style");
