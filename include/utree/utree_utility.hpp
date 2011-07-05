@@ -81,10 +81,30 @@ namespace detail {
         return ut.get<T>();
     }
 
+    template<class T>
+    T as(utree const& ut) {
+        return ut.get<T>();
+    }
+
     template<>
     std::string as<std::string>(utree& ut) 
     {    
         return utree::visit(ut, utree_to_string());
+    }
+
+    template<>
+    mapnik::color as<mapnik::color>(utree& ut) 
+    {    
+        BOOST_ASSERT(ut.size()==4);
+        
+        utree::const_iterator it = ut.front().begin();
+        
+        int r = as<int>(*it),
+            g = as<int>(*(it+1)),
+            b = as<int>(*(it+2)),
+            a = as<int>(*(it+3));
+        
+        return mapnik::color(r,g,b,a);
     }
 }
 
