@@ -20,41 +20,17 @@ namespace carto {
 
 using boost::spirit::utree;
 
-//template<typename parser_type>
 class parse_tree {
 
 private:
     utree _ast;    
     annotations_type _annotations;
-    
-    bool equal (parse_tree const& other) const {
-        return    (_ast == other._ast)
-               && (_annotations == other._annotations);
-    }
 
 public:
     parse_tree(void)
       : _ast(), 
         _annotations()
     { }
-
-    parse_tree(std::string const& in)
-      : _ast(),
-        _annotations()
-    { 
-        typedef position_iterator<std::string::const_iterator> iterator_type;
-        
-        //FIXME - std::string should be source or something
-        json_parser<iterator_type> p("std::string", _annotations);
-
-        iterator_type first(in.begin());
-        iterator_type last(in.end());
-
-        bool r = qi::phrase_parse(first, last, p, boost::spirit::ascii::space, _ast);
-        if (!r)
-            std::cout << "Parse failed\n";
-    }   
-    
     
     parse_tree& operator= (parse_tree const& other) {
         if (!equal(other)) {
@@ -96,7 +72,33 @@ public:
         return !equal(other);
     }
 
+private:
+    bool equal (parse_tree const& other) const {
+        return    (_ast == other._ast)
+               && (_annotations == other._annotations);
+    }
 };
+
+template<typename parser_type>
+parse_tree build_parse_tree(std::string const& in)
+{ 
+    parse_tree pt;
+    
+    typedef position_iterator<std::string::const_iterator> iterator_type;
+    
+    //FIXME - std::string should be source or something
+    parser_type p("std::string", pt.annotations());
+    //json_parser<iterator_type> p("std::string", _annotations);
+
+    iterator_type first(in.begin());
+    iterator_type last(in.end());
+
+    bool r = qi::phrase_parse(first, last, p, boost::spirit::ascii::space, pt.ast());
+    if (!r)
+        std::cout << "Parse failed\n";
+    
+    return pt;
+}
 
 }
 

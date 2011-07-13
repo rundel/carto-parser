@@ -1,3 +1,13 @@
+#ifndef VERSION_H
+#define VERSION_H
+
+#include <mapnik/version.hpp>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/tokenizer.hpp>
+
+
 bool version_from_string(std::string min_version_string)
 {
     boost::char_separator<char> sep(".");
@@ -28,5 +38,6 @@ bool version_from_string(std::string min_version_string)
     return (success) ? (n[0] * 100000) + (n[1] * 100) + (n[2]) : -1;
 
 }
-    
+
+#endif
     

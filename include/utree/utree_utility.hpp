@@ -87,22 +87,22 @@ namespace detail {
     }
 
     template<>
-    std::string as<std::string>(utree& ut) 
+    std::string as<std::string>(utree const& ut) 
     {    
         return utree::visit(ut, utree_to_string());
     }
 
     template<>
-    mapnik::color as<mapnik::color>(utree& ut) 
+    mapnik::color as<mapnik::color>(utree const& ut) 
     {    
         BOOST_ASSERT(ut.size()==4);
         
-        utree::const_iterator it = ut.front().begin();
+        utree::const_iterator it = ut.begin();
         
-        int r = as<int>(*it),
-            g = as<int>(*(it+1)),
-            b = as<int>(*(it+2)),
-            a = as<int>(*(it+3));
+        int r = as<int>(*it++),
+            g = as<int>(*it++),
+            b = as<int>(*it++),
+            a = as<int>(*it++);
         
         return mapnik::color(r,g,b,a);
     }

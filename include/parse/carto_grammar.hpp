@@ -29,6 +29,7 @@ using boost::spirit::utf8_symbol_type;
 
 enum carto_node_type
 {
+    carto_undefined,
     carto_variable,
     carto_mixin,
     carto_style,
@@ -66,7 +67,7 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
 
     qi::rule<Iterator, utree(), space_type> value, element, filter;
     qi::rule<Iterator, utree::list_type(), space_type> start, variable, attribute, style, color, mixin, function;
-    qi::rule<Iterator, utf8_symbol_type()> name, var_name, style_name, filter_text;
+    qi::rule<Iterator, utf8_symbol_type()> name, var_name, style_name, filter_text, enum_val;
     qi::rule<Iterator, utree::nil_type()> null;
 
     mapnik::css_color_grammar<Iterator> css_color;
@@ -124,6 +125,8 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
         style %= as_symbol[-style_name] >> -filter >> "{" >> (*element) >> "}"
                  > annotate(_val, carto_style);
         
+        enum_val = lexeme[+(alpha|"_")];
+        
         qi::real_parser<double, qi::strict_real_policies<double> > real;
         value =   null
                 | color
@@ -131,7 +134,7 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
                 | int_
                 | bool_
                 | utf8
-                | lexeme[+(alpha|"_")]
+                | enum_val
                 | function
                 | mixin
                 | var_name;
