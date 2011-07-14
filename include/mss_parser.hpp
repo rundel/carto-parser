@@ -21,7 +21,10 @@
 #include <mapnik/color_factory.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/font_set.hpp>
+#include <mapnik/filter_factory.hpp>
+#include <mapnik/version.hpp>
 
+//#include <base_parser.hpp>
 #include <utree/utree_utility.hpp>
 #include <utility/environment.hpp>
 #include <utility/version.hpp>
@@ -43,17 +46,47 @@ struct style_env {
     //  : vars(vars_),
     //    mixins(mixins_) { }
         
-    style_env(style_env env)
+    style_env(style_env const& env)
       : vars(env.vars),
         mixins(env.mixins) { }
-}
+};
 
-struct mss_parser : public base_parser {
+struct mss_parser {//}: public base_parser {
 
     parse_tree tree;
     bool strict;
     std::string path;
     
+    template<class T>
+    T as(utree const& ut)
+    {
+        return detail::as<T>(ut);
+    }
+    
+    parse_tree get_parse_tree()
+    {
+        return tree;
+    }
+    
+    std::string get_path()
+    {
+        return path;
+    }
+    
+    int get_node_type(utree const& ut)
+    {   
+        return( tree.annotations(ut.tag()).second );
+    }
+    
+    source_location get_location(utree const& ut)
+    {    
+        return tree.annotations()[ut.tag()].first;
+    }
+
+    //parse_tree tree;
+    //bool strict;
+    //std::string path;
+    //
     mss_parser(parse_tree const& pt, bool strict_ = false, std::string const& path_ = "./")
       : tree(pt),
         strict(strict_),
@@ -71,7 +104,7 @@ struct mss_parser : public base_parser {
     {
         using spirit::utree_type;
         
-        style_env env();
+        style_env env;
         
         utree const root_node = tree.ast();
         
@@ -92,9 +125,11 @@ struct mss_parser : public base_parser {
                         parse_style(map, *it, env);
                         break;
                     default:
+                    {
                         std::stringstream out;
                         out << "Invalid stylesheet node type: " << get_node_type(*it) << "\n";
                         throw config_error(out.str());
+                    }
                 }
             } catch (std::exception& e) {
                 std::cerr << "Error: " << e.what() << " at " << get_location(*it).get_string() << "\n";
@@ -140,8 +175,7 @@ struct mss_parser : public base_parser {
                     env.vars.define(as<std::string>((*it).front()), (*it).back());
                     break;
                 case carto_filter:
-                    std::string s = as<std::string>((*it));
-                    rule.set_filter(parse_expression(s,"utf8"));
+                    //rule.set_filter(mapnik::parse_expression(as<std::string>((*it)),"utf8"));
                     break;
                 case carto_mixin:
                 
@@ -162,9 +196,9 @@ struct mss_parser : public base_parser {
     
     void parse_rule_attribute(mapnik::Map& map, utree const& node, style_env& env, mapnik::rule& rule) 
     {
-        std::string key = as<std::string>((*it).front());
-        utree const& value = (*it).back();
-        
+        std::string key = as<std::string>(node.front());
+        utree const& value = node.back();
+        /*
         if (key.substr(0,8) == "polygon-")
             parse_polygon(rule,value);
         else if (key.substr(0,5) == "line-")  
@@ -187,20 +221,23 @@ struct mss_parser : public base_parser {
             parse_building(rule, value);
         else 
             config_error(std::string("Unknown attribute type: ")+key);
+        */
     }
     
-    void parse_map_style(maonik::Map& map, utree const& node, style_env& env) 
+    void parse_map_style(mapnik::Map& map, utree const& node, style_env& env) 
     {
         typedef utree::const_iterator iter;
-        iter it = node.begin(),
+        iter it = ++node.begin(),
             end = node.end();
         
         mapnik::parameters extra_attr;
         bool relative_to_xml = true;
         
         for (; it != end; ++it) {
+            
             BOOST_ASSERT((*it).size()==2);
-
+            
+            
             std::string key = as<std::string>((*it).front());
             utree const& value = (*it).back();
             std::string base = "";

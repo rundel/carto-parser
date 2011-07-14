@@ -39,4 +39,5 @@ struct base_parser {
     }
 };
 
+}
 #endif
