@@ -40,7 +40,7 @@ enum carto_node_type
 };
 
 
-struct css_conv_impl
+struct color_conv_impl
 {
     template <typename T>
     struct result
@@ -48,13 +48,13 @@ struct css_conv_impl
         typedef utree::list_type type;
     };
     
-    utree::list_type operator() (mapnik::css color) const
+    utree::list_type operator() (mapnik::color color) const
     {
         utree::list_type u;
-        u.push_back(color.r);
-        u.push_back(color.g);
-        u.push_back(color.b);
-        u.push_back(color.a);
+        u.push_back(color.red());
+        u.push_back(color.green());
+        u.push_back(color.blue());
+        u.push_back(color.alpha());
         
         return u;
     }
@@ -74,7 +74,7 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
 
     utf8_string_parser<Iterator> utf8;
     
-    phoenix::function<css_conv_impl> css_conv;
+    phoenix::function<color_conv_impl> css_conv;
 
     typedef error_handler_impl<Iterator> error_handler_type;
     phoenix::function<error_handler_type> const error;
