@@ -5,8 +5,8 @@
     file BOOST_LICENSE_1_0.rst or copy at http://www.boost.org/LICENSE_1_0.txt)
 ==============================================================================*/
 
-#ifndef LOAD_UTREE_H
-#define LOAD_UTREE_H
+#ifndef LOAD_MML_PARSER_H
+#define LOAD_MML_PARSER_H
 
 #include <iosfwd>
 #include <sstream>
@@ -39,12 +39,15 @@ struct mml_parser {
         path(path_) { }
       
     mml_parser(std::string const& in, bool strict_ = false, std::string const& path_ = "./")
-      : tree(in),
-        strict(strict_),
-        path(path_) { }
+      : strict(strict_),
+        path(path_) 
+    { 
+        typedef position_iterator<std::string::const_iterator> it_type;
+        tree = build_parse_tree< json_parser<it_type> >(in);    
+    }
     
     template<class T>
-    T as(utree& ut)
+    T as(utree const& ut)
     {
         return detail::as<T>(ut);
     }
@@ -118,11 +121,11 @@ struct mml_parser {
          }
     }
     
-    void parse_layer(mapnik::Map& map, utree node)
+    void parse_layer(mapnik::Map& map, utree const& node)
     {
         mapnik::layer lyr("","");
         
-        typedef utree::iterator iter;
+        typedef utree::const_iterator iter;
         iter it  = node.begin(), 
              end = node.end();
         
@@ -131,7 +134,7 @@ struct mml_parser {
                 BOOST_ASSERT((*it).size()==2);
             
                 std::string key = as<std::string>((*it).front());
-                utree& value = (*it).back();
+                utree const& value = (*it).back();
             
                 if (key == "id") {
                 
@@ -170,11 +173,11 @@ struct mml_parser {
     }
 
 
-    void parse_Datasource(mapnik::layer& lyr, utree node)
+    void parse_Datasource(mapnik::layer& lyr, utree const& node)
     {
         mapnik::parameters params;
         
-        typedef utree::iterator iter;
+        typedef utree::const_iterator iter;
         iter it  = node.begin(), 
              end = node.end();
         

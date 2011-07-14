@@ -70,6 +70,9 @@ struct mss_dot_printer {
                 
                 out << prefix << id << " [label=\"[";
                 switch(annotations[ut.tag()].second) {
+                    case carto_undefined:
+                        out << "";
+                        break;
                     case carto_variable:
                         out << "variable";
                         break;
@@ -179,7 +182,7 @@ struct mss_dot_printer {
 };
 
 
-template<class Char>
+/*template<class Char>
 bool generate_mss_dot( utree const& ast, annotations_type const& annotations,
                        std::basic_ostream<Char>& out)
 {
@@ -196,6 +199,28 @@ bool generate_mss_dot( utree const& ast, annotations_type const& annotations,
     std::basic_stringstream<Char> oss;
     mss_dot_printer<std::basic_stringstream<Char> > printer(oss, annotations);
     printer.print(ast);
+    
+    out = oss.str();
+    return true; 
+}*/
+
+template<class Char>
+bool generate_mss_dot( parse_tree const& in,
+                   std::basic_ostream<Char>& out)
+{
+    mss_dot_printer<std::basic_ostream<Char> > printer(out, in.annotations());
+    printer.print(in.ast());
+    
+    return true; 
+}
+
+template<class Char>
+bool generate_mss_dot( parse_tree const& in,
+                   std::basic_string<Char>& out)
+{
+    std::basic_stringstream<Char> oss;
+    mss_dot_printer<std::basic_stringstream<Char> > printer(oss, in.annotations());
+    printer.print(in.ast());
     
     out = oss.str();
     return true; 

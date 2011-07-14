@@ -13,6 +13,7 @@
 
 
 #include <mml_parser.hpp>
+#include <mss_parser.hpp>
 
 #include <mapnik/save_map.hpp>
 
@@ -108,6 +109,7 @@ int main(int argc, char **argv) {
                 
     } else if (p.extension() ==  ".mss") {
         
+        /*
         std::ifstream file(filename, std::ios_base::in);
 
         if (!file) { 
@@ -149,20 +151,27 @@ int main(int argc, char **argv) {
             std::cerr << "Error: " << e.what() << "\n";
         } catch(...) {
             std::cerr << "Error: Unknown error\n";
-        }
+        }*/
         
+        carto::mss_parser parser = carto::load_mss(filename, false);
+        parser.parse_stylesheet(m);
+
+        parse_tree pt = parser.get_parse_tree();
         std::string output;
+
         switch(out) {
             case out_ast:
-                std::cout << ast;
+                std::cout << pt.ast();
                 break;
             case out_xml:
+                output = mapnik::save_map_to_string(m,false);
+                break;
             case out_json:
                 //generate_json(pt,output);
-                std::cout << "Not currently supported";
+                std::cout << "Not supported";
                 break;
             case out_dot:
-                generate_mss_dot(ast,annotations,output);
+                generate_mss_dot(pt,output);
                 break;
         }
         std::cout << output << std::endl;
