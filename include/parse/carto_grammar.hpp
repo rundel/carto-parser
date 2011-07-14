@@ -47,13 +47,13 @@ struct css_conv_impl
         typedef utree::list_type type;
     };
     
-    utree::list_type operator() (mapnik::css color) const
+    utree::list_type operator() (mapnik::color color) const
     {
         utree::list_type u;
-        u.push_back(color.r);
-        u.push_back(color.g);
-        u.push_back(color.b);
-        u.push_back(color.a);
+        u.push_back(color.red());
+        u.push_back(color.green());
+        u.push_back(color.blue());
+        u.push_back(color.alpha());
         
         return u;
     }
