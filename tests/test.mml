@@ -6,7 +6,7 @@
         "name": "world",
         "srs": "+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs",
         "Datasource": {
-            "file": "../data/world_borders",
+            "file": "tests/data/world_borders",
             "type": "shape"
         }
     }]
