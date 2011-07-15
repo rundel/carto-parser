@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     using boost::filesystem::path;
     
     std::string mapnik_dir = MAPNIKDIR;
-    mapnik::datasource_cache::instance()->register_datasources(mapnik_dir + "/lib/mapnik2/input/"); 
+    mapnik::datasource_cache::instance()->register_datasources(mapnik_dir); 
     
     char const* filename;
     path p;
