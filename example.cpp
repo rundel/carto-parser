@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 
-#define BOOST_SPIRIT_DEBUG
+//#define BOOST_SPIRIT_DEBUG
 
 #include <parse/parse_tree.hpp>
 #include <parse/json_grammar.hpp>
