@@ -165,7 +165,7 @@ struct mml_parser {
             } catch (std::exception& e) {
                 throw config_error( e.what() );
             } catch (...) {
-                throw config_error( "Unknown error" );
+                throw config_error( "Unknown error - parse_layer" );
             }
         }
         
@@ -209,7 +209,7 @@ struct mml_parser {
         } catch (const mapnik::datasource_exception & ex ) {
             throw config_error( ex.what() );
         } catch (...) {
-            throw config_error("Unknown exception");
+            throw config_error("Unknown exception - parse_Datasource");
         }
     }
     
