@@ -23,6 +23,7 @@
 #include <mapnik/font_set.hpp>
 #include <mapnik/filter_factory.hpp>
 #include <mapnik/version.hpp>
+#include <mapnik/rule.hpp>
 
 //#include <base_parser.hpp>
 #include <utree/utree_utility.hpp>
@@ -96,8 +97,8 @@ struct mss_parser {//}: public base_parser {
       : strict(strict_),
         path(path_) 
     { 
-        typedef position_iterator<std::string::const_iterator> it_type;
-        tree = build_parse_tree< carto_parser<it_type> >(in);    
+        typedef position_iterator<std::string::const_iterator> iter;
+        tree = build_parse_tree< carto_parser<iter> >(in);    
     }
     
     void parse_stylesheet(mapnik::Map& map)
@@ -157,6 +158,10 @@ struct mss_parser {//}: public base_parser {
             
             parse_rule(map, node, env, rule);
             
+            mapnik::feature_type_style style;
+            style.add_rule(rule);
+            map.insert_style(name, style);
+            
         } else {
             throw config_error(std::string("Invalid style name: ")+name);
         }
@@ -198,30 +203,64 @@ struct mss_parser {//}: public base_parser {
     {
         std::string key = as<std::string>(node.front());
         utree const& value = node.back();
-        /*
+        
         if (key.substr(0,8) == "polygon-")
-            parse_polygon(rule,value);
+            parse_polygon(rule,key,value);
+        /*
         else if (key.substr(0,5) == "line-")  
-            parse_line(rule,value);
+            parse_line(rule,value,env);
         else if (key.substr(0,7) == "marker-")
-            parse_marker(rule,value);
+            parse_marker(rule,value,env);
         else if (key.substr(0,7) == "shield-")
-            parse_shield(rule,value);
+            parse_shield(rule,value,env);
         else if (key.substr(0,13)== "line-pattern-")
-            parse_line_pattern(rule,value);
+            parse_line_pattern(rule,value,env);
         else if (key.substr(0,16)== "polygon-pattern-") 
-            parse_polygon_pattern(rule,value);
+            parse_polygon_pattern(rule,value,env);
         else if (key.substr(0,7) == "raster-")
-            parse_raster(rule,value);
+            parse_raster(rule,value,env);
         else if (key.substr(0,6) == "point-")
-            parse_point(rule,value);
+            parse_point(rule,value,env);
         else if (key.substr(0,5) == "text-")
-            parse_text(rule,value);
+            parse_text(rule,value,env);
         else if (key.substr(0,9) == "building-")
-            parse_building(rule, value);
+            parse_building(rule,value,env);
         else 
             config_error(std::string("Unknown attribute type: ")+key);
         */
+    }
+        
+    void parse_polygon(mapnik::rule& rule, std::string const& key, utree const& value) 
+    {
+        typedef mapnik::rule::symbolizers::iterator iter;
+        iter it  = rule.begin(),
+             end = rule.end();
+        
+        mapnik::polygon_symbolizer *s;
+        for(; it!=end; ++it) {
+            if (mapnik::polygon_symbolizer *sym = boost::get<mapnik::polygon_symbolizer>(&(*it))) {
+                s = sym;
+                break;
+            }
+        }
+        
+        if (it==end) {
+            rule.append(mapnik::polygon_symbolizer());
+            
+            mapnik::polygon_symbolizer *sym = boost::get<mapnik::polygon_symbolizer>(& (*(--rule.end())) );
+            s = sym;
+        }
+        
+        if (key == "polygon-fill") {
+            s->set_fill(as<mapnik::color>(value));
+        } else if (key == "polygon-gamma") {
+            s->set_gamma(as<double>(value));
+        } else if (key == "polygon-opacity") {
+            s->set_opacity(as<double>(value));
+        } else {
+            throw config_error(std::string("Unknown attribute keyword: ")+key);
+        }
+        
     }
     
     void parse_map_style(mapnik::Map& map, utree const& node, style_env& env) 
@@ -301,13 +340,6 @@ mss_parser load_mss(char const* filename, bool strict)
 
     return mss_parser(in, strict, filename);
 }
-
-/*
-mml_parser load_mml_string(std::string const& in, bool strict, std::string const& base_url)
-{
-    return mml_parser(in, strict, base_url);
-}
-*/
 
 }
 #endif 
