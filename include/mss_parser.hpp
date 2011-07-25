@@ -144,7 +144,8 @@ struct mss_parser {//}: public base_parser {
          }
     }
     
-    void parse_style(mapnik::Map& map, utree const& node, style_env const& env_, mapnik::rule const& rule_ = mapnik::rule())
+    void parse_style(mapnik::Map& map, utree const& node, style_env const& env_, 
+                     mapnik::rule const& rule_ = mapnik::rule(), std::string const& parent_name = "")
     {
         mapnik::rule rule(rule_);
         style_env env(env_);
@@ -153,63 +154,69 @@ struct mss_parser {//}: public base_parser {
         
         if (name == "Map") {
             parse_map_style(map, node, env);
-        } else if (name[0] == '#' || name[0] == '.' || name == "") {
-            rule.set_name(name);
-            
-            parse_rule(map, node, env, rule);
-            
-            mapnik::feature_type_style style;
-            style.add_rule(rule);
-            map.insert_style(name, style);
-            
         } else {
-            throw config_error(std::string("Invalid style name: ")+name);
-        }
-    }
-    
-    void parse_rule(mapnik::Map& map, utree const& node, style_env& env, mapnik::rule& rule) 
-    {
-        
-        typedef utree::const_iterator iter;
-        iter it = ++node.begin(),
-            end = node.end();
-        
-        for (; it != end; ++it) {
-            switch((carto_node_type) get_node_type(*it)) {
-                case carto_variable:
-                    env.vars.define(as<std::string>((*it).front()), (*it).back());
-                    break;
-                case carto_filter:
-                    //rule.set_filter(mapnik::parse_expression(as<std::string>((*it)),"utf8"));
-                    break;
-                case carto_mixin:
+            if (name[0] == '#' || name[0] == '.') {
+                name.erase(0,1);
+            } else if (name == "") {
+                name = parent_name;
+            }
+            //rule.set_name(name);
+            
+            typedef utree::const_iterator iter;
+            iter it = ++node.begin(),
+                end = node.end();
+
+            for (; it != end; ++it) {
+                switch((carto_node_type) get_node_type(*it)) {
+                    case carto_variable:
+                        env.vars.define(as<std::string>((*it).front()), (*it).back());
+                        break;
+                    case carto_filter:
+                        //rule.set_filter(mapnik::parse_expression(as<std::string>((*it)),"utf8"));
+                        break;
+                    case carto_mixin:
+
+                        break;
+                    case carto_style:
+                        parse_style(map, *it, env, rule, name);
+                        break;
+                    case carto_attribute:
+                        parse_attribute(map, *it, env, rule);                    
+                        break;
+                    default:
+                        std::stringstream out;
+                        out << "Invalid style node type: " << get_node_type(*it) << "\n";
+                        throw config_error(out.str());
+                }
+            }
+            
+            
+            if (!(rule == rule_) && rule.get_symbolizers().size() != 0) {
                 
-                    break;
-                case carto_style:
-                    parse_style(map, *it, env, rule);
-                    break;
-                case carto_attribute:
-                    parse_rule_attribute(map, *it, env, rule);                    
-                    break;
-                default:
-                    std::stringstream out;
-                    out << "Invalid style node type: " << get_node_type(*it) << "\n";
-                    throw config_error(out.str());
+                mapnik::Map::style_iterator it = map.styles().find(name),
+                                           end = map.styles().end();
+                
+                if (it != end) {
+                    it->second.add_rule(rule);
+                } else {
+                    mapnik::feature_type_style style;
+                    style.add_rule(rule);
+                    map.insert_style(name, style);
+                }
             }
         }
     }
     
-    void parse_rule_attribute(mapnik::Map& map, utree const& node, style_env& env, mapnik::rule& rule) 
+    void parse_attribute(mapnik::Map& map, utree const& node, style_env& env, mapnik::rule& rule) 
     {
         std::string key = as<std::string>(node.front());
-        utree const& value = node.back();
         
         if (key.substr(0,8) == "polygon-")
-            parse_polygon(rule,key,value);
-        /*
+            parse_polygon(rule,key,node);
         else if (key.substr(0,5) == "line-")  
-            parse_line(rule,value,env);
-        else if (key.substr(0,7) == "marker-")
+            parse_line(rule,key,node);
+
+        /* else if (key.substr(0,7) == "marker-")
             parse_marker(rule,value,env);
         else if (key.substr(0,7) == "shield-")
             parse_shield(rule,value,env);
@@ -229,27 +236,32 @@ struct mss_parser {//}: public base_parser {
             config_error(std::string("Unknown attribute type: ")+key);
         */
     }
-        
-    void parse_polygon(mapnik::rule& rule, std::string const& key, utree const& value) 
+    
+    template<class symbolizer>
+    symbolizer* find_symbolizer(mapnik::rule& rule) 
     {
         typedef mapnik::rule::symbolizers::iterator iter;
         iter it  = rule.begin(),
              end = rule.end();
         
-        mapnik::polygon_symbolizer *s;
         for(; it!=end; ++it) {
-            if (mapnik::polygon_symbolizer *sym = boost::get<mapnik::polygon_symbolizer>(&(*it))) {
-                s = sym;
-                break;
-            }
+            if (symbolizer *sym = boost::get<symbolizer>(&(*it)))
+                return(sym);
         }
         
-        if (it==end) {
-            rule.append(mapnik::polygon_symbolizer());
-            
-            mapnik::polygon_symbolizer *sym = boost::get<mapnik::polygon_symbolizer>(& (*(--rule.end())) );
-            s = sym;
-        }
+        BOOST_ASSERT(it==end);
+        rule.append(symbolizer());
+        
+        symbolizer *sym = boost::get<symbolizer>(& (*(--rule.end())) );
+        return(sym);
+    } 
+        
+    void parse_polygon(mapnik::rule& rule, std::string const& key, utree const& node) 
+    {
+        mapnik::polygon_symbolizer *s = find_symbolizer<mapnik::polygon_symbolizer>(rule);
+        
+        BOOST_ASSERT(node.size()==2);
+        utree const& value = node.back();
         
         if (key == "polygon-fill") {
             s->set_fill(as<mapnik::color>(value));
@@ -260,14 +272,65 @@ struct mss_parser {//}: public base_parser {
         } else {
             throw config_error(std::string("Unknown attribute keyword: ")+key);
         }
-        
     }
+    
+    void parse_line(mapnik::rule& rule, std::string const& key, utree const& node) 
+    {
+        mapnik::line_symbolizer *s = find_symbolizer<mapnik::line_symbolizer>(rule);
+        
+        mapnik::stroke strk = s->get_stroke();
+        
+        if (key == "line-dasharray") {
+            
+            BOOST_ASSERT( (node.size()-1) % 2 == 0 );
+            
+            typedef utree::const_iterator iter;
+            iter it = ++node.begin(),
+                end =   node.end();
+                
+            for(; it!=end;) {
+                double dash = as<double>(*it); it++;
+                double gap  = as<double>(*it); it++;
+                
+                strk.add_dash(dash,gap);
+            }
+        } else {
+            
+            BOOST_ASSERT(node.size()==2);
+            utree const& value = node.back();
+            
+            if (key == "line-color") {
+                strk.set_color(as<mapnik::color>(value));
+            } else if (key == "line-width") {
+                strk.set_width(as<double>(value));
+            } else if (key == "line-opacity") {
+                strk.set_opacity(as<double>(value));
+            } else if (key == "line-join") {
+                mapnik::line_join_e en;
+                en.from_string(as<std::string>(value));
+                strk.set_line_join(en);
+            } else if (key == "line-cap") {
+                mapnik::line_cap_e en;
+                en.from_string(as<std::string>(value));
+                strk.set_line_cap(en);
+            } else if (key == "line-gamma") {
+                strk.set_gamma(as<double>(value));
+            } else if (key == "line-dash-offset") {
+                strk.set_dash_offset(as<double>(value));
+            } else {
+                throw config_error(std::string("Unknown attribute keyword: ")+key);
+            }
+        }
+        
+        s->set_stroke(strk);
+    }
+    
     
     void parse_map_style(mapnik::Map& map, utree const& node, style_env& env) 
     {
         typedef utree::const_iterator iter;
         iter it = ++node.begin(),
-            end = node.end();
+            end =   node.end();
         
         mapnik::parameters extra_attr;
         bool relative_to_xml = true;
