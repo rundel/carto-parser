@@ -25,6 +25,11 @@
 #include <mapnik/version.hpp>
 #include <mapnik/rule.hpp>
 
+#include <mapnik/svg/svg_parser.hpp>
+#include <mapnik/svg/svg_path_parser.hpp>
+
+#include <agg_trans_affine.h>
+
 //#include <base_parser.hpp>
 #include <utree/utree_utility.hpp>
 #include <utility/environment.hpp>
@@ -82,6 +87,59 @@ struct mss_parser {//}: public base_parser {
     source_location get_location(utree const& ut)
     {    
         return tree.annotations()[ut.tag()].first;
+    }
+
+    template<class symbolizer>
+    symbolizer* find_symbolizer(mapnik::rule& rule) 
+    {
+        typedef mapnik::rule::symbolizers::iterator iter;
+        iter it  = rule.begin(),
+             end = rule.end();
+        
+        for(; it!=end; ++it) {
+            if (symbolizer *sym = boost::get<symbolizer>(&(*it)))
+                return(sym);
+        }
+        
+        BOOST_ASSERT(it==end);
+        rule.append(init_symbolizer<symbolizer>());
+        
+        symbolizer *sym = boost::get<symbolizer>(& (*(--rule.end())) );
+        return(sym);
+    }
+    
+    template<class symbolizer>
+    symbolizer init_symbolizer() 
+    {
+        return symbolizer();
+    }
+
+    mapnik::transform_type create_transform(std::string const& str)
+    {
+        agg::trans_affine tr;
+        if (!mapnik::svg::parse_transform(str,tr))
+        {
+            std::stringstream ss;
+            ss << "Could not parse transform from '" << str 
+               << "', expected string like: 'matrix(1, 0, 0, 1, 0, 0)'";
+            if (strict)
+                throw config_error(ss.str()); // value_error here?
+            else
+                std::clog << "### WARNING: " << ss << std::endl;         
+        }
+        mapnik::transform_type matrix;
+        tr.store_to(&matrix[0]);
+        
+        return matrix;
+    }
+    
+    void key_error(std::string const& key) {
+        
+        std::string err = std::string("Unknown attribute keyword: ")+key; 
+        if (strict)
+            throw config_error(err);
+        else
+            std::clog << "### WARNING: " << err << std::endl;    
     }
 
     //parse_tree tree;
@@ -215,47 +273,26 @@ struct mss_parser {//}: public base_parser {
             parse_polygon(rule,key,node);
         else if (key.substr(0,5) == "line-")  
             parse_line(rule,key,node);
-
-        /* else if (key.substr(0,7) == "marker-")
-            parse_marker(rule,value,env);
-        else if (key.substr(0,7) == "shield-")
-            parse_shield(rule,value,env);
-        else if (key.substr(0,13)== "line-pattern-")
-            parse_line_pattern(rule,value,env);
-        else if (key.substr(0,16)== "polygon-pattern-") 
-            parse_polygon_pattern(rule,value,env);
-        else if (key.substr(0,7) == "raster-")
-            parse_raster(rule,value,env);
+        else if (key.substr(0,7) == "marker-")
+            parse_marker(rule,key,node);
         else if (key.substr(0,6) == "point-")
-            parse_point(rule,value,env);
-        else if (key.substr(0,5) == "text-")
-            parse_text(rule,value,env);
+            parse_point(rule,key,node);
+        else if (key.substr(0,13)== "line-pattern-")
+            parse_line_pattern(rule,key,node);
+        else if (key.substr(0,16)== "polygon-pattern-") 
+            parse_polygon_pattern(rule,key,node);
+        else if (key.substr(0,7) == "raster-")
+            parse_raster(rule,key,node);
         else if (key.substr(0,9) == "building-")
-            parse_building(rule,value,env);
+            parse_building(rule,key,node);
+        else if (key.substr(0,5) == "text-")
+            parse_text(rule,key,node);
+        else if (key.substr(0,7) == "shield-")
+            parse_shield(rule,key,node);
         else 
-            config_error(std::string("Unknown attribute type: ")+key);
-        */
+            key_error(key);
     }
-    
-    template<class symbolizer>
-    symbolizer* find_symbolizer(mapnik::rule& rule) 
-    {
-        typedef mapnik::rule::symbolizers::iterator iter;
-        iter it  = rule.begin(),
-             end = rule.end();
-        
-        for(; it!=end; ++it) {
-            if (symbolizer *sym = boost::get<symbolizer>(&(*it)))
-                return(sym);
-        }
-        
-        BOOST_ASSERT(it==end);
-        rule.append(symbolizer());
-        
-        symbolizer *sym = boost::get<symbolizer>(& (*(--rule.end())) );
-        return(sym);
-    } 
-        
+      
     void parse_polygon(mapnik::rule& rule, std::string const& key, utree const& node) 
     {
         mapnik::polygon_symbolizer *s = find_symbolizer<mapnik::polygon_symbolizer>(rule);
@@ -270,7 +307,7 @@ struct mss_parser {//}: public base_parser {
         } else if (key == "polygon-opacity") {
             s->set_opacity(as<double>(value));
         } else {
-            throw config_error(std::string("Unknown attribute keyword: ")+key);
+            key_error(key);
         }
     }
     
@@ -318,12 +355,276 @@ struct mss_parser {//}: public base_parser {
             } else if (key == "line-dash-offset") {
                 strk.set_dash_offset(as<double>(value));
             } else {
-                throw config_error(std::string("Unknown attribute keyword: ")+key);
+                key_error(key);
             }
         }
         
         s->set_stroke(strk);
     }
+    
+    void parse_marker(mapnik::rule& rule, std::string const& key, utree const& node) 
+    {
+        mapnik::markers_symbolizer *s = find_symbolizer<mapnik::markers_symbolizer>(rule); 
+
+        BOOST_ASSERT(node.size()==2);
+        utree const& value = node.back();
+
+        mapnik::stroke stroke = s->get_stroke();
+
+        if (key == "marker-file") {
+            s->set_filename(mapnik::parse_path(as<std::string>(value)));
+        } else if (key == "marker-opacity") {
+            s->set_opacity(as<float>(value));
+        } else if (key == "marker-line-color") {
+            stroke.set_color(as<mapnik::color>(value));
+        } else if (key == "marker-line-width") {
+            stroke.set_width(as<double>(value));
+        } else if (key == "marker-line-opacity") {
+            stroke.set_opacity(as<double>(value));
+        } else if (key == "marker-placement") {
+            mapnik::marker_placement_e en;
+            en.from_string(as<std::string>(value));
+            s->set_marker_placement(en);
+        } else if (key == "marker-type") {
+            mapnik::marker_type_e en;
+            en.from_string(as<std::string>(value));
+            s->set_marker_type(en);
+        } else if (key == "marker-width") {
+            s->set_width(as<double>(value));
+        } else if (key == "marker-height") {
+            s->set_height(as<double>(value));
+        } else if (key == "marker-fill") {
+            s->set_fill(as<mapnik::color>(value));
+        } else if (key == "marker-allow-overlap") {
+            s->set_allow_overlap(as<bool>(value));
+        } else if (key == "marker-spacing") {
+            s->set_spacing(as<double>(value));
+        } else if (key == "marker-max-error") {
+            s->set_max_error(as<double>(value));
+        } else if (key == "marker-transform") {
+            s->set_transform(create_transform(as<std::string>(value)));
+        } else {
+            key_error(key);
+        }
+    }
+    
+    void parse_point(mapnik::rule& rule, std::string const& key, utree const& node) 
+    {
+        mapnik::point_symbolizer *s = find_symbolizer<mapnik::point_symbolizer>(rule);
+        
+        BOOST_ASSERT(node.size()==2);
+        utree const& value = node.back();
+        
+        if (key == "point-file") {
+            s->set_filename(mapnik::parse_path(as<std::string>(value)));
+        } else if (key == "point-allow-overlap") {
+            s->set_allow_overlap(as<bool>(value));
+        } else if (key == "point-ignore-placement") {
+            s->set_ignore_placement(as<bool>(value));
+        } else if (key == "point-opacity") {
+            s->set_opacity(as<float>(value));
+        } else if (key == "point-placement") {
+            mapnik::point_placement_e en;
+            en.from_string(as<std::string>(value));
+            s->set_point_placement(en);
+        } else if (key == "point-transform") {
+            s->set_transform(create_transform(as<std::string>(value)));
+        } else {
+            key_error(key);
+        }
+    }
+    
+    void parse_line_pattern(mapnik::rule& rule, std::string const& key, utree const& node) 
+    {
+        mapnik::line_pattern_symbolizer *s = find_symbolizer<mapnik::line_pattern_symbolizer>(rule);
+        
+        BOOST_ASSERT(node.size()==2);
+        utree const& value = node.back();
+        
+        if (key == "line-pattern-file") {
+            s->set_filename(mapnik::parse_path(as<std::string>(value)));
+        } else {
+            key_error(key);
+        }
+    }
+    
+    void parse_polygon_pattern(mapnik::rule& rule, std::string const& key, utree const& node) 
+    {
+        mapnik::polygon_pattern_symbolizer *s = find_symbolizer<mapnik::polygon_pattern_symbolizer>(rule);
+        
+        BOOST_ASSERT(node.size()==2);
+        utree const& value = node.back();
+        
+        if (key == "polygon-pattern-file") {
+            s->set_filename(mapnik::parse_path(as<std::string>(value)));
+        } else if (key == "polygon-pattern-alignment") {
+            mapnik::pattern_alignment_e en;
+            en.from_string(as<std::string>(value));
+            s->set_alignment(en);
+        } else {
+            key_error(key);
+        }
+    }
+    
+    void parse_raster(mapnik::rule& rule, std::string const& key, utree const& node) 
+    {
+        mapnik::raster_symbolizer *s = find_symbolizer<mapnik::raster_symbolizer>(rule);
+        
+        BOOST_ASSERT(node.size()==2);
+        utree const& value = node.back();
+        
+        if (key == "raster-opacity") {
+            s->set_opacity(as<float>(value));
+        } else if (key == "raster-mode") {
+            s->set_mode(as<std::string>(value));
+        } else if (key == "raster-scaling") {
+            s->set_scaling(as<std::string>(value));
+        } else {
+            key_error(key);
+        }
+    }
+    
+    void parse_building(mapnik::rule& rule, std::string const& key, utree const& node) 
+    {
+        mapnik::building_symbolizer *s = find_symbolizer<mapnik::building_symbolizer>(rule);
+        
+        BOOST_ASSERT(node.size()==2);
+        utree const& value = node.back();
+        
+        if (key == "building-fill") {
+            s->set_fill(as<mapnik::color>(value));
+        } else if (key == "building-fill-opacity") {
+            s->set_opacity(as<double>(value));
+        } else if (key == "building-height") {
+            s->set_height(as<double>(value));
+        } else {
+            key_error(key);
+        }
+    }
+    
+    void parse_text(mapnik::rule& rule, std::string const& key, utree const& node) 
+    {
+        mapnik::text_symbolizer *s = find_symbolizer<mapnik::text_symbolizer>(rule);
+        
+        BOOST_ASSERT(node.size()==2);
+        utree const& value = node.back();
+    
+        if (key == "text-name") {
+            s->set_name(mapnik::parse_expression(as<std::string>(value)));
+        } else if (key == "text-face-name") {
+            s->set_face_name(as<std::string>(value));
+        } else if (key == "text-size") {
+            s->set_text_size(as<unsigned>(value));
+        } else if (key == "text-ratio") {
+            s->set_text_ratio(as<unsigned>(value));
+        } else if (key == "text-wrap-width") {
+            s->set_wrap_width(as<unsigned>(value));
+        } else if (key == "text-spacing") {
+            s->set_label_spacing(as<unsigned>(value));
+        } else if (key == "text-character-spacing") {
+            s->set_character_spacing(as<unsigned>(value));
+        } else if (key == "text-line-spacing") {
+            s->set_line_spacing(as<unsigned>(value));
+        } else if (key == "text-label-position-tolerance") {
+            s->set_label_position_tolerance(as<unsigned>(value));
+        } else if (key == "text-max-char-angle-delta") {
+            s->set_max_char_angle_delta(as<double>(value));
+        } else if (key == "text-fill") {
+            s->set_fill(as<mapnik::color>(value));
+        } else if (key == "text-opacity") {
+            s->set_text_opacity(as<double>(value));
+        } else if (key == "text-halo-fill") {
+            s->set_halo_fill(as<mapnik::color>(value));
+        } else if (key == "text-halo-radius") {
+            s->set_halo_radius(as<double>(value));
+        } else if (key == "text-dx") {
+            double x = as<double>(value);
+            double y = s->get_displacement().get<1>();
+            s->set_displacement(x,y);
+        } else if (key == "text-dy") {
+            double x = s->get_displacement().get<0>();
+            double y = as<double>(value);
+            s->set_displacement(x,y);
+        } else if (key == "text-vertical-alignment") {
+            mapnik::vertical_alignment_e en;
+            en.from_string(as<std::string>(value));
+            s->set_vertical_alignment(en);
+        } else if (key == "text-avoid-edges") {
+            s->set_avoid_edges(as<bool>(value));
+        } else if (key == "text-min-distance") {
+            s->set_minimum_distance(as<double>(value));
+        } else if (key == "text-min-padding") {
+            s->set_minimum_padding(as<double>(value));
+        } else if (key == "text-allow-overlap") {
+            s->set_allow_overlap(as<bool>(value));
+        } else if (key == "text-placement") {
+            mapnik::label_placement_e en;
+            en.from_string(as<std::string>(value));
+            s->set_label_placement(en);
+        } else if (key == "text-placement-type") {
+            // FIXME
+        } else if (key == "text-placements") {
+            // FIXME
+        } else if (key == "text-transform") {
+            mapnik::text_transform_e en;
+            en.from_string(as<std::string>(value));
+            s->set_text_transform(en);
+        } else {
+            key_error(key);
+        }
+    }
+    
+    
+    void parse_shield(mapnik::rule& rule, std::string const& key, utree const& node) 
+    {
+        mapnik::shield_symbolizer *s = find_symbolizer<mapnik::shield_symbolizer>(rule);
+        
+        BOOST_ASSERT(node.size()==2);
+        utree const& value = node.back();
+
+        if (key == "shield-name") {
+            s->set_name(mapnik::parse_expression(as<std::string>(value)));
+        } else if (key == "shield-face-name") {
+            s->set_face_name(as<std::string>(value));
+        } else if (key == "shield-size") {
+            s->set_text_size(as<unsigned>(value));
+        } else if (key == "shield-spacing") {
+            s->set_label_spacing(as<unsigned>(value));
+        } else if (key == "shield-character-spacing") {
+            s->set_character_spacing(as<unsigned>(value));
+        } else if (key == "shield-line-spacing") {
+            s->set_line_spacing(as<unsigned>(value));
+        } else if (key == "shield-fill") {
+            s->set_fill(as<mapnik::color>(value));
+        } else if (key == "shield-text-dx") {
+            double x = as<double>(value);
+            double y = s->get_displacement().get<1>();
+            s->set_displacement(x,y);
+        } else if (key == "shield-text-dy") {
+            double x = s->get_displacement().get<0>();
+            double y = as<double>(value);
+            s->set_displacement(x,y);
+        } else if (key == "shield-dx") {
+            double x = as<double>(value);
+            double y = s->get_shield_displacement().get<1>();
+            s->set_shield_displacement(x,y);
+        } else if (key == "shield-dy") {
+            double x = s->get_shield_displacement().get<0>();
+            double y = as<double>(value);
+            s->set_shield_displacement(x,y);
+        } else if (key == "shield-min-distance") {
+            s->set_minimum_distance(as<double>(value));
+        } else if (key == "shield-placement") {
+            mapnik::label_placement_e en;
+            en.from_string(as<std::string>(value));
+            s->set_label_placement(en);
+        } else {
+            key_error(key);
+        }
+    }
+    
+
+    
     
     
     void parse_map_style(mapnik::Map& map, utree const& node, style_env& env) 
@@ -374,7 +675,7 @@ struct mss_parser {//}: public base_parser {
                 extra_attr["font-directory"] = dir;
                 //freetype_engine::register_fonts( ensure_relative_to_xml(dir), false);
             } else {
-                throw config_error(std::string("Unknown attribute keyword: ")+key);
+                key_error(key);
             }
         }
         
@@ -385,8 +686,31 @@ struct mss_parser {//}: public base_parser {
     
 };
 
+template<>
+mapnik::text_symbolizer mss_parser::init_symbolizer<mapnik::text_symbolizer>() 
+{
+    return mapnik::text_symbolizer(mapnik::expression_ptr(), "<no default>", 0, 
+                                   mapnik::color(0,0,0) );
+}
 
+template<>
+mapnik::shield_symbolizer mss_parser::init_symbolizer<mapnik::shield_symbolizer>() 
+{
+    return mapnik::shield_symbolizer(mapnik::expression_ptr(), "<no default>", 0, 
+                                     mapnik::color(0,0,0), mapnik::path_expression_ptr());
+}
 
+template<>
+mapnik::polygon_pattern_symbolizer mss_parser::init_symbolizer<mapnik::polygon_pattern_symbolizer>() 
+{
+    return mapnik::polygon_pattern_symbolizer(mapnik::parse_path(""));
+}
+
+template<>
+mapnik::line_pattern_symbolizer mss_parser::init_symbolizer<mapnik::line_pattern_symbolizer>() 
+{
+    return mapnik::line_pattern_symbolizer(mapnik::parse_path(""));
+}
 
 mss_parser load_mss(char const* filename, bool strict)
 {
