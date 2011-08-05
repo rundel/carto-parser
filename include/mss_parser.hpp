@@ -34,6 +34,7 @@
 #include <utree/utree_utility.hpp>
 #include <utility/environment.hpp>
 #include <utility/version.hpp>
+#include <utility/round.hpp>
 
 
 namespace carto {
@@ -223,14 +224,16 @@ struct mss_parser {//}: public base_parser {
             typedef utree::const_iterator iter;
             iter it = ++node.begin(),
                 end = node.end();
-
+            
+            std::string str;
             for (; it != end; ++it) {
                 switch((carto_node_type) get_node_type(*it)) {
                     case carto_variable:
                         env.vars.define(as<std::string>((*it).front()), (*it).back());
                         break;
                     case carto_filter:
-                        //rule.set_filter(mapnik::parse_expression(as<std::string>((*it)),"utf8"));
+                        str = as<std::string>((*it).front());
+                        //rule.set_filter(mapnik::parse_expression(str,"utf8"));
                         break;
                     case carto_mixin:
 
@@ -514,19 +517,19 @@ struct mss_parser {//}: public base_parser {
         } else if (key == "text-face-name") {
             s->set_face_name(as<std::string>(value));
         } else if (key == "text-size") {
-            s->set_text_size(as<unsigned>(value));
+            s->set_text_size(round(as<double>(value)));
         } else if (key == "text-ratio") {
-            s->set_text_ratio(as<unsigned>(value));
+            s->set_text_ratio(round(as<double>(value)));
         } else if (key == "text-wrap-width") {
-            s->set_wrap_width(as<unsigned>(value));
+            s->set_wrap_width(round(as<double>(value)));
         } else if (key == "text-spacing") {
-            s->set_label_spacing(as<unsigned>(value));
+            s->set_label_spacing(round(as<double>(value)));
         } else if (key == "text-character-spacing") {
-            s->set_character_spacing(as<unsigned>(value));
+            s->set_character_spacing(round(as<double>(value)));
         } else if (key == "text-line-spacing") {
-            s->set_line_spacing(as<unsigned>(value));
+            s->set_line_spacing(round(as<double>(value)));
         } else if (key == "text-label-position-tolerance") {
-            s->set_label_position_tolerance(as<unsigned>(value));
+            s->set_label_position_tolerance(round(as<double>(value)));
         } else if (key == "text-max-char-angle-delta") {
             s->set_max_char_angle_delta(as<double>(value));
         } else if (key == "text-fill") {
@@ -587,13 +590,13 @@ struct mss_parser {//}: public base_parser {
         } else if (key == "shield-face-name") {
             s->set_face_name(as<std::string>(value));
         } else if (key == "shield-size") {
-            s->set_text_size(as<unsigned>(value));
+            s->set_text_size(round(as<double>(value)));
         } else if (key == "shield-spacing") {
-            s->set_label_spacing(as<unsigned>(value));
+            s->set_label_spacing(round(as<double>(value)));
         } else if (key == "shield-character-spacing") {
-            s->set_character_spacing(as<unsigned>(value));
+            s->set_character_spacing(round(as<double>(value)));
         } else if (key == "shield-line-spacing") {
-            s->set_line_spacing(as<unsigned>(value));
+            s->set_line_spacing(round(as<double>(value)));
         } else if (key == "shield-fill") {
             s->set_fill(as<mapnik::color>(value));
         } else if (key == "shield-text-dx") {
@@ -653,7 +656,7 @@ struct mss_parser {//}: public base_parser {
             } else if (key == "background-image") {
                 map.set_background_image(base+as<std::string>(value));
             } else if (key == "buffer-size") {
-                map.set_buffer_size(as<unsigned>(value));
+                map.set_buffer_size(round(as<double>(value)));
             } else if (key == "base") {
                 base = as<std::string>(value); // FIXME - not sure this is correct
             } else if (key == "paths-from-xml") {

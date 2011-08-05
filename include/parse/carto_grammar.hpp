@@ -88,7 +88,7 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
     {
         using qi::char_;
         using qi::lexeme;
-        using qi::int_;
+        using qi::double_;
         using qi::bool_;
         using qi::lit;
         using qi::_val;
@@ -127,11 +127,9 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
         
         enum_val = lexeme[+(alpha|"_")];
         
-        qi::real_parser<double, qi::strict_real_policies<double> > real;
         value =   null
                 | color
-                | real
-                | int_
+                | double_
                 | bool_
                 | utf8
                 | enum_val
