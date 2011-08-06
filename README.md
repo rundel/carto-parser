@@ -19,9 +19,10 @@ Running
 -------
 The example application can be run as follows:
 
-	./example test.mml
-	./example -o xml test.mml
-	./example -o dot test.mml
-	./example -o ast test.mml
-	./example -o json test.mml
-	./example test.mss
+	./example tests/test.mml
+	./example -o xml tests/test.mml
+	./example -o dot tests/test.mml
+	./example -o ast tests/test.mml
+	./example -o json tests/test.mml
+	./example tests/test.mss
+	./example -o dot tests/test.mss

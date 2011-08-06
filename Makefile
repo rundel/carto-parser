@@ -1,7 +1,7 @@
 #CXX = g++
 CXX = clang++
 
-CXXFLAGS = -g -I./include $(shell mapnik-config --cflags) -DMAPNIKDIR=\"$(shell mapnik-config --input-plugins)\"
+CXXFLAGS = -g -I./include -I./agg/include $(shell mapnik-config --cflags) -DMAPNIKDIR=\"$(shell mapnik-config --input-plugins)\"
 
 LIBS = $(shell mapnik-config --libs)
 
