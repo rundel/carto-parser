@@ -114,9 +114,7 @@ struct utf8_string_parser : qi::grammar<Iterator, std::string()> {
                     | char_("btnfr\\\"'") [push_esc(_r1, _1)]
                   );
     
-        start = '"'
-              > *(escaped(_val) | (~char_('"')) [_val += _1])
-              > '"';
+        start = '"' > *(escaped(_val) | (~char_('"')) [_val += _1]) > '"';
     
         std::string name = "utf8";
     
