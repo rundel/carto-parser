@@ -21,7 +21,7 @@
 #include <mapnik/datasource.hpp>
 #include <mapnik/datasource_cache.hpp>
 
-#include "utree/utree_utility.hpp"
+#include <utility/utree.hpp.hpp>
 
 namespace carto {
 
