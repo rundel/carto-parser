@@ -28,7 +28,10 @@ enum filter_node_type
     filter_ge,
     filter_gt,
     filter_match,
-    filter_replace
+    filter_replace,
+    filter_attribute,
+    filter_expression,
+    filter_var
 };
 
 
@@ -38,21 +41,20 @@ struct filter_parser : qi::grammar< Iterator, utree(), space_type>
     qi::rule<Iterator, utree(), space_type> logical_expr, not_expr, cond_expr, 
                                             equality_expr, lhs_expr, rhs_expr, 
                                             regex_match_expr, regex_replace_expr, 
-                                            ustring; 
-    
-    typedef error_handler_impl<Iterator> error_handler_type;
-    annotator<Iterator> annotate;
-    
-    phoenix::function<error_handler_type> const error;
-    phoenix::function<combine_impl> const combine;
+                                            ustring, null, var_name; 
     
     utf8_string_parser<Iterator> utf8;
-    expression_parser<Iterator> expression;
+    //expression_parser<Iterator> expression;
+    typedef error_handler_impl<Iterator> error_handler_type;
+    phoenix::function<error_handler_type> const error;
+    annotator<Iterator> annotate;
+    phoenix::function<combine_impl> const combine;
+    
     
     filter_parser (std::string const& source, annotations_type& annotations)
       : filter_parser::base_type(logical_expr),
         utf8(source),
-        expression(source,annotations),
+        //expression(source,annotations),
         error(error_handler_type(source)),
         annotate(annotations)
     {
@@ -87,38 +89,45 @@ struct filter_parser : qi::grammar< Iterator, utree(), space_type>
                   | (                         regex_replace_expr[combine(_val, _1)] > annotate(_val, filter_replace) )
                 );
         
+        regex_match_expr = lit(".match") > '(' > ustring[_val = _1] > ')' > annotate(_val, filter_match);
+        
+        regex_replace_expr = lit(".replace") > '(' > ustring[_val = _1] > ',' 
+                                                   > ustring[combine(_val, _1)] > ')'
+                                                   > annotate(_val, filter_replace);
+        
+        qi::alpha_type alpha;
+        
         std::string exclude = std::string(" {}[]:\"\x01-\x1f\x7f") + '\0';
-                
-        lhs_expr =   ('[' >> +(~char_(".<>=!()|&"+exclude)) >> ']')
-                   | (       +(~char_(".<>=!()|&"+exclude))       );
         
-        ustring %= '\'' >> lexeme[*(char_-'\'')] >> '\'';
+        var_name = lexeme["@" > alpha >> *(~char_(exclude))] > annotate(_val, filter_var);
+        
+        ustring = '\'' >> lexeme[*(char_-'\'')] >> '\'';
+        
+        null = lit("null")[_val = utree::nil_type()];
+        
+        rhs_expr =   double_
+                   | bool_
+                   | null
+                   | ustring
+                   | var_name;
+                   //| (expression[_val = _1] > annotate(_val, filter_expression))
+                   //| lhs_expr[_val = _1];
+        
+        lhs_expr = (   '[' >> +(char_ - ']') >> ']'
+                     | +(~char_(".<>=!()|&"+exclude))
+                     | var_name
+                   ) > annotate(_val, filter_attribute);
         
         
-        regex_match_expr = lit(".match")
-            >> '(' >> ustring[_val = _1] >> ')';
-
-        regex_replace_expr = lit(".replace")
-            > '(' >> ustring[_val = _1] > ',' > ustring[combine(_val, _1)] > ')';
-
-
-        rhs_expr = double_[_val = _1]
-            | bool_[_val = true]
-            | lit("null")[_val = utree::nil_type()]
-            | ustring[_val = _1]
-            | lhs_expr[_val = _1]
-            ;//| expression[_val = _1];
-        
-        
-        BOOST_SPIRIT_DEBUG_NODE(logical_expr);
-        BOOST_SPIRIT_DEBUG_NODE(not_expr);
-        BOOST_SPIRIT_DEBUG_NODE(cond_expr);
-        BOOST_SPIRIT_DEBUG_NODE(equality_expr);
-        BOOST_SPIRIT_DEBUG_NODE(lhs_expr);
-        BOOST_SPIRIT_DEBUG_NODE(rhs_expr);
-        BOOST_SPIRIT_DEBUG_NODE(regex_match_expr);
-        BOOST_SPIRIT_DEBUG_NODE(regex_replace_expr);
-        BOOST_SPIRIT_DEBUG_NODE(ustring);
+        //BOOST_SPIRIT_DEBUG_NODE(logical_expr);
+        //BOOST_SPIRIT_DEBUG_NODE(not_expr);
+        //BOOST_SPIRIT_DEBUG_NODE(cond_expr);
+        //BOOST_SPIRIT_DEBUG_NODE(equality_expr);
+        //BOOST_SPIRIT_DEBUG_NODE(lhs_expr);
+        //BOOST_SPIRIT_DEBUG_NODE(rhs_expr);
+        //BOOST_SPIRIT_DEBUG_NODE(regex_match_expr);
+        //BOOST_SPIRIT_DEBUG_NODE(regex_replace_expr);
+        //BOOST_SPIRIT_DEBUG_NODE(ustring);
         
         
         qi::on_error<qi::fail>(logical_expr, error(qi::_3, qi::_4));

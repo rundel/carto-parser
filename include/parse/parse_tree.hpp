@@ -30,7 +30,10 @@ public:
     parse_tree(void)
       : _ast(), 
         _annotations()
-    { }
+    {
+        //FIXME - utree.tag() returns 0 even if not tagged so fill up 0 position 
+        _annotations.push_back(annotation_type());
+    }
     
     parse_tree& operator= (parse_tree const& other) {
         if (!equal(other)) {

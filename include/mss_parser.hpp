@@ -30,8 +30,9 @@
 
 #include <agg_trans_affine.h>
 
+#include <generate/generate_filter.hpp>
 //#include <base_parser.hpp>
-#include <utility/utree.hpp.hpp>
+#include <utility/utree.hpp>
 #include <utility/environment.hpp>
 #include <utility/version.hpp>
 #include <utility/round.hpp>
@@ -225,7 +226,10 @@ struct mss_parser {//}: public base_parser {
             iter it = ++node.begin(),
                 end = node.end();
             
-            std::string str;
+            std::string str, filter_str;
+            parse_tree filter_tree;
+            typedef position_iterator<std::string::const_iterator> filter_iter;
+            
             for (; it != end; ++it) {
                 switch((carto_node_type) get_node_type(*it)) {
                     case carto_variable:
@@ -233,7 +237,13 @@ struct mss_parser {//}: public base_parser {
                         break;
                     case carto_filter:
                         str = as<std::string>((*it).front());
-                        //rule.set_filter(mapnik::parse_expression(str,"utf8"));
+                        
+                        filter_tree = build_parse_tree< carto::filter_parser<filter_iter> >(str);
+                        
+                        filter_str.clear();
+                        generate_filter(filter_tree,filter_str);
+                        
+                        rule.set_filter(mapnik::parse_expression(filter_str,"utf8"));
                         break;
                     case carto_mixin:
 
