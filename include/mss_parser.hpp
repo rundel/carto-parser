@@ -226,9 +226,7 @@ struct mss_parser {//}: public base_parser {
             iter it = ++node.begin(),
                 end = node.end();
             
-            std::string str, filter_str;
-            parse_tree filter_tree;
-            typedef position_iterator<std::string::const_iterator> filter_iter;
+            std::string str;
             
             for (; it != end; ++it) {
                 switch((carto_node_type) get_node_type(*it)) {
@@ -236,14 +234,7 @@ struct mss_parser {//}: public base_parser {
                         env.vars.define(as<std::string>((*it).front()), (*it).back());
                         break;
                     case carto_filter:
-                        str = as<std::string>((*it).front());
-                        
-                        filter_tree = build_parse_tree< carto::filter_parser<filter_iter> >(str);
-                        
-                        filter_str.clear();
-                        generate_filter(filter_tree,filter_str);
-                        
-                        rule.set_filter(mapnik::parse_expression(filter_str,"utf8"));
+                        parse_filter(map, *it, env, rule);
                         break;
                     case carto_mixin:
 
@@ -277,6 +268,32 @@ struct mss_parser {//}: public base_parser {
             }
         }
     }
+    
+    void parse_filter(mapnik::Map& map, utree const& node, style_env& env, mapnik::rule& rule)
+    {
+        if (node.size() == 0)
+            return;
+            
+        typedef utree::const_iterator iter;
+        iter it  = node.begin(),
+             end = node.end();
+        
+        
+        std::string out;
+        for (; it != end; ++it) 
+        {
+            if (it != node.begin())
+                out += " and ";
+            
+            std::string str;
+            generate_filter(*it,tree.annotations(),str);
+            
+            out += str;
+        }
+        
+        rule.set_filter(mapnik::parse_expression(out,"utf8"));
+    }
+    
     
     void parse_attribute(mapnik::Map& map, utree const& node, style_env& env, mapnik::rule& rule) 
     {

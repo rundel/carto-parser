@@ -16,6 +16,7 @@
 #include <mapnik/css_color_grammar.hpp>
 
 #include <parse/string_grammar.hpp>
+#include <parse/filter_grammar.hpp>
 #include <parse/error_handler.hpp>
 #include <parse/annotator.hpp>
 
@@ -66,13 +67,14 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
 {
 
     qi::rule<Iterator, utree(), space_type> value, element, filter;
-    qi::rule<Iterator, utree::list_type(), space_type> start, variable, attribute, style, color, mixin, function;
-    qi::rule<Iterator, utf8_symbol_type()> name, var_name, style_name, filter_text, enum_val;
+    qi::rule<Iterator, utree::list_type(), space_type> start, variable, attribute, style, color, mixin, function, filter_list;
+    qi::rule<Iterator, utf8_symbol_type()> name, var_name, style_name, enum_val;
     qi::rule<Iterator, utree::nil_type()> null;
 
     mapnik::css_color_grammar<Iterator> css_color;
 
     utf8_string_parser<Iterator> utf8;
+    filter_parser<Iterator> filter_text;
     
     phoenix::function<color_conv_impl> css_conv;
 
@@ -82,8 +84,9 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
 
     carto_parser (std::string const& source, annotations_type& annotations)
       : carto_parser::base_type(start),
-        utf8(source), 
-        error(error_handler_type(source)), 
+        utf8(source),
+        filter_text(source, annotations),
+        error(error_handler_type(source)),
         annotate(annotations)
     {
         using qi::char_;
@@ -105,8 +108,8 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
                   | attribute
                   | style;
               
-        std::string exclude = std::string(" {}[]:\"\x01-\x1f\x7f") + '\0';
-        name = alpha >> *(~char_(exclude));
+        //std::string exclude = std::string(" {}[]:\"\x01-\x1f\x7f") + '\0';
+        name = char_("a-zA-Z_") > *char_("a-zA-Z0-9_-");
         
         var_name = lexeme["@" > name];
         
@@ -118,11 +121,11 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
         
         style_name = lexeme[-char_("#.") >> name];
         
-        filter_text = lexeme[*(char_-"]")];
-        filter %= lit("[") >> filter_text > "]"
-                  > annotate(_val, carto_filter);
+        //filter_text = lexeme[*(char_-"]")];
+        filter = lit("[") > filter_text > "]";
+        filter_list = (*filter) > annotate(_val, carto_filter);
         
-        style %= as_symbol[-style_name] >> -filter >> "{" >> (*element) >> "}"
+        style %= as_symbol[-style_name] >> filter_list >> "{" >> *element >> "}"
                  > annotate(_val, carto_style);
         
         enum_val = lexeme[+(alpha|"_")];

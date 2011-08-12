@@ -41,9 +41,15 @@ struct filter_printer {
         
         using spirit::utree_type;
         
-        
         if (ut.tag() == 0) {
-            utree::visit(ut, *this);
+            if (ut.which() == utree_type::list_type) {
+                utree::const_iterator it = ut.begin(), end = ut.end();
+                for (; it != end; ++it) 
+                    (*this)(*it);
+            } else {
+                utree::visit(ut, *this);
+            }
+            
         } else {
             typedef utree::const_iterator iter;
             iter it = ut.begin(),
@@ -68,9 +74,9 @@ struct filter_printer {
                     break;
                 case filter_not:
                     BOOST_ASSERT(ut.size()==2);
-                    out << "not (";
+                    out << "(not (";
                     (*this)(*it);
-                    out << ")";
+                    out << "))";
                     break;
                 case filter_eq:
                     BOOST_ASSERT(ut.size()==2);
@@ -139,7 +145,8 @@ struct filter_printer {
                 case filter_attribute:
                     //BOOST_ASSERT(ut.size()==1);
                     out << "[";
-                    (*this)(*it);
+                    for (; it != end; ++it)
+                        (*this)(*it);
                     out << "]";
                     break;
                 case filter_expression:
@@ -212,11 +219,31 @@ bool generate_filter( parse_tree const& in, std::basic_ostream<Char>& out)
 }
 
 template<class Char>
+bool generate_filter( utree const& ast, annotations_type const& annotations, std::basic_ostream<Char>& out)
+{
+    filter_printer<std::basic_ostream<Char> > printer(out, annotations);
+    printer.print(ast);
+    
+    return true; 
+}
+
+template<class Char>
 bool generate_filter( parse_tree const& in, std::basic_string<Char>& out)
 {
     std::basic_stringstream<Char> oss;
     filter_printer<std::basic_stringstream<Char> > printer(oss, in.annotations());
     printer.print(in.ast());
+    
+    out = oss.str();
+    return true; 
+}
+
+template<class Char>
+bool generate_filter( utree const& ast, annotations_type const& annotations, std::basic_string<Char>& out)
+{
+    std::basic_stringstream<Char> oss;
+    filter_printer<std::basic_stringstream<Char> > printer(oss, annotations);
+    printer.print(ast);
     
     out = oss.str();
     return true; 

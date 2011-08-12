@@ -13,6 +13,7 @@
 
 #include <parse/parse_tree.hpp>
 #include <parse/carto_grammar.hpp>
+#include <generate/generate_filter.hpp>
 
 namespace carto {
 
@@ -105,11 +106,24 @@ struct mss_dot_printer {
                 end   = ut.end();
                 n_id += ut.size();
                 
-                for (int i=0; it != end; ++it, ++i) {
+                if (annotations[ut.tag()].second == carto_filter) {
+                    for (int i=0; it != end; ++it, ++i) {
                     
-                    cur_id = start_id+i; 
-                    out << prefix << id << " -> " << prefix << cur_id << ";\n";
-                    (*this)(*it);   
+                        cur_id = start_id+i;
+                        out << prefix << id << " -> " << prefix << cur_id << ";\n";
+                    
+                        out << prefix << cur_id << " [label=\"";
+                        generate_filter(*it,annotations,out);
+                        out << "\"];\n";
+                    }
+                    
+                } else {                
+                    for (int i=0; it != end; ++it, ++i) {
+                    
+                        cur_id = start_id+i; 
+                        out << prefix << id << " -> " << prefix << cur_id << ";\n";
+                        (*this)(*it);   
+                    }
                 }
                 
                 return;
@@ -117,7 +131,7 @@ struct mss_dot_printer {
             default:
                 break;
         }
-
+        
         utree::visit(ut, *this);
     }
 
