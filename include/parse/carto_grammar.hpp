@@ -34,6 +34,7 @@ enum carto_node_type
     carto_variable,
     carto_mixin,
     carto_style,
+    carto_map_style,
     carto_filter,
     carto_function,
     carto_attribute,
@@ -67,7 +68,9 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
 {
 
     qi::rule<Iterator, utree(), space_type> value, element, filter;
-    qi::rule<Iterator, utree::list_type(), space_type> start, variable, attribute, style, color, mixin, function, filter_list;
+    qi::rule<Iterator, utree::list_type(), space_type> start, variable, attribute, map_style,
+                                                       style, style_name_list, style_name_filter, style_element_list,
+                                                       color, mixin, function, filter_list;
     qi::rule<Iterator, utf8_symbol_type()> name, var_name, style_name, enum_val;
     qi::rule<Iterator, utree::nil_type()> null;
 
@@ -99,10 +102,7 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
 
         qi::as<utf8_symbol_type> as_symbol;
         
-        qi::alpha_type alpha;
-        //qi::alnum_type alnum;
-
-        start = +(variable | style);
+        start = +(variable | map_style | style);
         
         element =   variable
                   | attribute
@@ -119,16 +119,23 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
         attribute %= as_symbol[name] > ":" > (value % ",") > ";"
                      > annotate(_val, carto_attribute);
         
-        style_name = lexeme[-char_("#.") >> name];
         
         //filter_text = lexeme[*(char_-"]")];
         filter = lit("[") > filter_text > "]";
-        filter_list = (*filter) > annotate(_val, carto_filter);
+        filter_list = *filter > annotate(_val, carto_filter);;
         
-        style %= as_symbol[-style_name] >> filter_list >> "{" >> *element >> "}"
-                 > annotate(_val, carto_style);
+        style_name = lexeme[-char_("#.") >> name];
+        style_name_filter = as_symbol[-style_name] >> filter_list;
+        style_name_list = style_name_filter % ",";
         
-        enum_val = lexeme[+(alpha|"_")];
+        style_element_list = "{" > *element > "}";
+        style = style_name_list >> style_element_list > annotate(_val, carto_style);
+        //style = style_name_list >> "{" > *element > "}" > annotate(_val, carto_style);
+        
+        
+        map_style = lit("Map") > "{" > *(variable | attribute) > "}" > annotate(_val, carto_map_style);
+        
+        enum_val = lexeme[+(char_("a-zA-Z_-"))];
         
         value =   null
                 | color
@@ -183,10 +190,23 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
         //BOOST_SPIRIT_DEBUG_NODE( value );
         //BOOST_SPIRIT_DEBUG_NODE( name );
         
+        
+        BOOST_SPIRIT_DEBUG_NODE(start);
+        BOOST_SPIRIT_DEBUG_NODE(variable);
+        BOOST_SPIRIT_DEBUG_NODE(attribute);
+        BOOST_SPIRIT_DEBUG_NODE(map_style);
+        BOOST_SPIRIT_DEBUG_NODE(style);
+        BOOST_SPIRIT_DEBUG_NODE(style_name_list);
+        BOOST_SPIRIT_DEBUG_NODE(style_element_list);
+        BOOST_SPIRIT_DEBUG_NODE(style_name_filter);
+        BOOST_SPIRIT_DEBUG_NODE(color);
+        BOOST_SPIRIT_DEBUG_NODE(mixin);
+        BOOST_SPIRIT_DEBUG_NODE(function);
+        BOOST_SPIRIT_DEBUG_NODE(filter_list);
+        BOOST_SPIRIT_DEBUG_NODE(name);
+        BOOST_SPIRIT_DEBUG_NODE(var_name);
+        BOOST_SPIRIT_DEBUG_NODE(style_name);
     }
 };
-
-
 }
-
 #endif

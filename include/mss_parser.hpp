@@ -21,6 +21,7 @@
 #include <mapnik/color_factory.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/font_set.hpp>
+#include <mapnik/expression_string.hpp>
 #include <mapnik/filter_factory.hpp>
 #include <mapnik/version.hpp>
 #include <mapnik/rule.hpp>
@@ -64,6 +65,19 @@ struct mss_parser {//}: public base_parser {
     parse_tree tree;
     bool strict;
     std::string path;
+    
+    mss_parser(parse_tree const& pt, bool strict_ = false, std::string const& path_ = "./")
+      : tree(pt),
+        strict(strict_),
+        path(path_) { }
+      
+    mss_parser(std::string const& in, bool strict_ = false, std::string const& path_ = "./")
+      : strict(strict_),
+        path(path_) 
+    { 
+        typedef position_iterator<std::string::const_iterator> iter;
+        tree = build_parse_tree< carto_parser<iter> >(in, path);    
+    }
     
     template<class T>
     T as(utree const& ut)
@@ -143,23 +157,6 @@ struct mss_parser {//}: public base_parser {
         else
             std::clog << "### WARNING: " << err << std::endl;    
     }
-
-    //parse_tree tree;
-    //bool strict;
-    //std::string path;
-    //
-    mss_parser(parse_tree const& pt, bool strict_ = false, std::string const& path_ = "./")
-      : tree(pt),
-        strict(strict_),
-        path(path_) { }
-      
-    mss_parser(std::string const& in, bool strict_ = false, std::string const& path_ = "./")
-      : strict(strict_),
-        path(path_) 
-    { 
-        typedef position_iterator<std::string::const_iterator> iter;
-        tree = build_parse_tree< carto_parser<iter> >(in);    
-    }
     
     void parse_stylesheet(mapnik::Map& map)
     {
@@ -181,6 +178,9 @@ struct mss_parser {//}: public base_parser {
                         break;
                     case carto_mixin:
                     
+                        break;
+                    case carto_map_style:
+                        parse_map_style(map, *it, env);
                         break;
                     case carto_style:
                         parse_style(map, *it, env);
@@ -204,40 +204,49 @@ struct mss_parser {//}: public base_parser {
          }
     }
     
-    void parse_style(mapnik::Map& map, utree const& node, style_env const& env_, 
-                     mapnik::rule const& rule_ = mapnik::rule(), std::string const& parent_name = "")
+    void parse_style(mapnik::Map& map, utree const& node, style_env const& parent_env, 
+                     mapnik::rule const& parent_rule = mapnik::rule(), std::string const& parent_name = "")
     {
-        mapnik::rule rule(rule_);
-        style_env env(env_);
         
-        std::string name = as<std::string>(node.front());
+        BOOST_ASSERT(node.size()==2);
         
-        if (name == "Map") {
-            parse_map_style(map, node, env);
-        } else {
-            if (name[0] == '#' || name[0] == '.') {
+        typedef utree::const_iterator iter;
+        iter style_it  = node.front().begin(),
+             style_end = node.front().end();
+        
+        for (; style_it != style_end; ++style_it) {
+            
+            mapnik::rule rule(parent_rule);
+            style_env env(parent_env);
+            
+            std::string name = as<std::string>((*style_it).front());
+        
+            if (name[0] == '#') {
                 name.erase(0,1);
-            } else if (name == "") {
+            } else {
                 name = parent_name;
             }
-            //rule.set_name(name);
             
-            typedef utree::const_iterator iter;
-            iter it = ++node.begin(),
-                end = node.end();
+            //BOOST_ASSERT((*style_it).size() == 1 || (*style_it).size() == 2);
+            //
+            //if ((*style_it).size() == 2) {
+            //    BOOST_ASSERT(get_node_type((*style_it).back()) == carto_filter);
+            //    parse_filter(map, (*style_it).back(), env, rule);
+            //}
             
-            std::string str;
+            BOOST_ASSERT((*style_it).size() == 2);
+            BOOST_ASSERT(get_node_type((*style_it).back()) == carto_filter);
+            parse_filter(map, (*style_it).back(), env, rule);
             
+            iter it  = node.back().begin(),
+                 end = node.back().end();
+        
             for (; it != end; ++it) {
                 switch((carto_node_type) get_node_type(*it)) {
                     case carto_variable:
                         env.vars.define(as<std::string>((*it).front()), (*it).back());
                         break;
-                    case carto_filter:
-                        parse_filter(map, *it, env, rule);
-                        break;
                     case carto_mixin:
-
                         break;
                     case carto_style:
                         parse_style(map, *it, env, rule, name);
@@ -252,14 +261,14 @@ struct mss_parser {//}: public base_parser {
                 }
             }
             
-            
-            if (!(rule == rule_) && rule.get_symbolizers().size() != 0) {
+            if (rule.get_symbolizers().size() != 0 && !(rule == parent_rule)) {
+
                 
-                mapnik::Map::style_iterator it = map.styles().find(name),
-                                           end = map.styles().end();
+                mapnik::Map::style_iterator map_it  = map.styles().find(name),
+                                            map_end = map.styles().end();
                 
-                if (it != end) {
-                    it->second.add_rule(rule);
+                if (map_it != map_end) {
+                    map_it->second.add_rule(rule);
                 } else {
                     mapnik::feature_type_style style;
                     style.add_rule(rule);
@@ -278,8 +287,12 @@ struct mss_parser {//}: public base_parser {
         iter it  = node.begin(),
              end = node.end();
         
+        std::string out, cur_filter = mapnik::to_expression_string(rule.get_filter());
         
-        std::string out;
+        if (cur_filter != "true") {
+            out += "(" + cur_filter + ") and ";
+        }
+        
         for (; it != end; ++it) 
         {
             if (it != node.begin())
@@ -291,7 +304,11 @@ struct mss_parser {//}: public base_parser {
             out += str;
         }
         
+        // FIXME
+        
         rule.set_filter(mapnik::parse_expression(out,"utf8"));
+        
+        std::string s = mapnik::to_expression_string(rule.get_filter());
     }
     
     
@@ -660,8 +677,8 @@ struct mss_parser {//}: public base_parser {
     void parse_map_style(mapnik::Map& map, utree const& node, style_env& env) 
     {
         typedef utree::const_iterator iter;
-        iter it = ++node.begin(),
-            end =   node.end();
+        iter it = node.begin(),
+            end = node.end();
         
         mapnik::parameters extra_attr;
         bool relative_to_xml = true;
@@ -670,6 +687,10 @@ struct mss_parser {//}: public base_parser {
             
             BOOST_ASSERT((*it).size()==2);
             
+            if (get_node_type(*it) == carto_variable) {
+                env.vars.define(as<std::string>((*it).front()), (*it).back());
+                break;
+            }
             
             std::string key = as<std::string>((*it).front());
             utree const& value = (*it).back();
