@@ -110,8 +110,7 @@ struct filter_parser : qi::grammar< Iterator, utree(), space_type>
                    //| (expression[_val = _1] > annotate(_val, filter_expression))
                    //| lhs_expr[_val = _1];
 
-
-
+        qi::on_error<qi::fail>(logical_expr, error(qi::_3, qi::_4));
 
         //BOOST_SPIRIT_DEBUG_NODE(logical_expr);
         //BOOST_SPIRIT_DEBUG_NODE(not_expr);
@@ -122,9 +121,6 @@ struct filter_parser : qi::grammar< Iterator, utree(), space_type>
         //BOOST_SPIRIT_DEBUG_NODE(regex_match_expr);
         //BOOST_SPIRIT_DEBUG_NODE(regex_replace_expr);
         //BOOST_SPIRIT_DEBUG_NODE(ustring);
-
-
-        qi::on_error<qi::fail>(logical_expr, error(qi::_3, qi::_4));
     }
     
     qi::rule<Iterator, utree(), space_type> logical_expr, not_expr, cond_expr, 
