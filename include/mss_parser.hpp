@@ -11,6 +11,8 @@
 #include <iosfwd>
 #include <sstream>
 
+#include <boost/functional/hash.hpp>
+
 #include <parse/parse_tree.hpp>
 #include <parse/json_grammar.hpp>
 
@@ -43,7 +45,7 @@ namespace carto {
 
 using mapnik::config_error;
 
-struct mss_parser {//}: public base_parser {
+struct mss_parser {
 
     parse_tree tree;
     bool strict;
@@ -294,7 +296,7 @@ struct mss_parser {//}: public base_parser {
     }
     
     
-    void parse_attribute(mapnik::Map& map, utree const& node, style_env& env, mapnik::rule& rule) 
+    void parse_attribute(mapnik::Map& map, utree const& node, style_env const& env, mapnik::rule& rule) 
     {
         std::string key = as<std::string>(node.front());
         
@@ -315,7 +317,7 @@ struct mss_parser {//}: public base_parser {
         else if (key.substr(0,9) == "building-")
             parse_building(rule,key,node);
         else if (key.substr(0,5) == "text-")
-            parse_text(rule,key,node);
+            parse_text(map,rule,key,node);
         else if (key.substr(0,7) == "shield-")
             parse_shield(rule,key,node);
         else 
@@ -531,17 +533,51 @@ struct mss_parser {//}: public base_parser {
         }
     }
     
-    void parse_text(mapnik::rule& rule, std::string const& key, utree const& node) 
+    void parse_text(mapnik::Map& map, mapnik::rule& rule, std::string const& key, utree const& node) 
     {
         mapnik::text_symbolizer *s = find_symbolizer<mapnik::text_symbolizer>(rule);
+        
+        if (key == "text-face-name") {
+            if (node.size() == 2) {
+                s->set_face_name(as<std::string>(node.back()));
+            } else {
+                typedef utree::const_iterator iter;
+                iter it, end;
+                
+                it  = ++node.begin();
+                end = node.end();
+                
+                std::size_t seed;
+                for( ; it!=end; ++it)
+                    boost::hash_combine(seed, as<std::string>(*it));
+                
+                std::stringstream ss;
+                ss << std::hex << seed;
+                
+                std::string name = ss.str();
+                
+                // FIXME - font_set has not set_name method so have to do this with two loops
+                it  = ++node.begin();
+                end = node.end();
+                
+                mapnik::font_set fs(name);
+                for( ; it!=end; ++it)
+                    fs.add_face_name(as<std::string>(*it));
+                
+                s->set_fontset(fs);
+                s->set_face_name(std::string());
+                map.insert_fontset(name, fs);
+            }
+            
+            return;
+        }
+        
         
         BOOST_ASSERT(node.size()==2);
         utree const& value = node.back();
     
         if (key == "text-name") {
             s->set_name(mapnik::parse_expression(as<std::string>(value)));
-        } else if (key == "text-face-name") {
-            s->set_face_name(as<std::string>(value));
         } else if (key == "text-size") {
             s->set_text_size(round(as<double>(value)));
         } else if (key == "text-ratio") {
