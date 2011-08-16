@@ -67,7 +67,7 @@ template<typename Iterator>
 struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
 {
 
-    qi::rule<Iterator, utree(), space_type> value, element, filter, ustring;
+    qi::rule<Iterator, utree(), space_type> value, element, filter, ustring, var_value;
     qi::rule<Iterator, utree::list_type(), space_type> start, variable, attribute, map_style,
                                                        style, style_name_list, style_name_filter, style_element_list,
                                                        color, mixin, function, filter_list;
@@ -99,12 +99,14 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
         using qi::lit;
         using qi::_val;
         using qi::lit;
+        using qi::omit;
 
         qi::as<utf8_symbol_type> as_symbol;
         
         start = +(variable | map_style | style);
         
-        element =   variable
+        element = omit["/*" >> *(char_ - "*/") >> "*/"]
+                  | variable
                   | attribute
                   | style;
               
@@ -138,6 +140,8 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
         enum_val = lexeme[+(char_("a-zA-Z_-"))];
         ustring = lexeme[char_("'") > *(char_-'\'') > char_("'")];
         
+        var_value = var_name > annotate(_val, carto_variable);
+        
         value =   null
                 | color
                 | double_
@@ -147,13 +151,11 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
                 | enum_val
                 | function
                 | mixin
-                | var_name;
+                | var_value;
                 
-        mixin %=   style_name > -("(" > name > ")") > ";"
-                 > annotate(_val, carto_mixin);
+        mixin = style_name > -("(" > name > ")") > ";" > annotate(_val, carto_mixin);
         
-        function %=   name > "(" > (value % ",") > ")"
-                    > annotate(_val, carto_function);
+        function = name > "(" > (value % ",") > ")" > annotate(_val, carto_function);
         
         color =   css_color[_val = css_conv(qi::_1)]
                 > annotate(_val, carto_color);
