@@ -113,7 +113,7 @@ struct mss_dot_printer {
                         out << prefix << id << " -> " << prefix << cur_id << ";\n";
                     
                         out << prefix << cur_id << " [label=\"";
-                        generate_filter(*it,annotations,out);
+                        generate_filter(*it,annotations,style_env(),out);
                         out << "\"];\n";
                     }
                     

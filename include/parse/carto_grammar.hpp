@@ -67,7 +67,7 @@ template<typename Iterator>
 struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
 {
 
-    qi::rule<Iterator, utree(), space_type> value, element, filter;
+    qi::rule<Iterator, utree(), space_type> value, element, filter, ustring;
     qi::rule<Iterator, utree::list_type(), space_type> start, variable, attribute, map_style,
                                                        style, style_name_list, style_name_filter, style_element_list,
                                                        color, mixin, function, filter_list;
@@ -136,12 +136,14 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
         map_style = lit("Map") > "{" > *(variable | attribute) > "}" > annotate(_val, carto_map_style);
         
         enum_val = lexeme[+(char_("a-zA-Z_-"))];
+        ustring = lexeme[char_("'") > *(char_-'\'') > char_("'")];
         
         value =   null
                 | color
                 | double_
                 | bool_
                 | utf8
+                | ustring
                 | enum_val
                 | function
                 | mixin
@@ -180,32 +182,21 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), space_type>
  
         qi::on_error<qi::fail>(start, error(qi::_3, qi::_4));
         
-        //BOOST_SPIRIT_DEBUG_NODE( start );
-        //BOOST_SPIRIT_DEBUG_NODE( variable );
-        //BOOST_SPIRIT_DEBUG_NODE( style );
-        //BOOST_SPIRIT_DEBUG_NODE( style_name );
-        //BOOST_SPIRIT_DEBUG_NODE( filter );
-        //BOOST_SPIRIT_DEBUG_NODE( element );
-        //BOOST_SPIRIT_DEBUG_NODE( attribute );
-        //BOOST_SPIRIT_DEBUG_NODE( value );
-        //BOOST_SPIRIT_DEBUG_NODE( name );
-        
-        
-        BOOST_SPIRIT_DEBUG_NODE(start);
-        BOOST_SPIRIT_DEBUG_NODE(variable);
-        BOOST_SPIRIT_DEBUG_NODE(attribute);
-        BOOST_SPIRIT_DEBUG_NODE(map_style);
-        BOOST_SPIRIT_DEBUG_NODE(style);
-        BOOST_SPIRIT_DEBUG_NODE(style_name_list);
-        BOOST_SPIRIT_DEBUG_NODE(style_element_list);
-        BOOST_SPIRIT_DEBUG_NODE(style_name_filter);
-        BOOST_SPIRIT_DEBUG_NODE(color);
-        BOOST_SPIRIT_DEBUG_NODE(mixin);
-        BOOST_SPIRIT_DEBUG_NODE(function);
-        BOOST_SPIRIT_DEBUG_NODE(filter_list);
-        BOOST_SPIRIT_DEBUG_NODE(name);
-        BOOST_SPIRIT_DEBUG_NODE(var_name);
-        BOOST_SPIRIT_DEBUG_NODE(style_name);
+        //BOOST_SPIRIT_DEBUG_NODE(start);
+        //BOOST_SPIRIT_DEBUG_NODE(variable);
+        //BOOST_SPIRIT_DEBUG_NODE(attribute);
+        //BOOST_SPIRIT_DEBUG_NODE(map_style);
+        //BOOST_SPIRIT_DEBUG_NODE(style);
+        //BOOST_SPIRIT_DEBUG_NODE(style_name_list);
+        //BOOST_SPIRIT_DEBUG_NODE(style_element_list);
+        //BOOST_SPIRIT_DEBUG_NODE(style_name_filter);
+        //BOOST_SPIRIT_DEBUG_NODE(color);
+        //BOOST_SPIRIT_DEBUG_NODE(mixin);
+        //BOOST_SPIRIT_DEBUG_NODE(function);
+        //BOOST_SPIRIT_DEBUG_NODE(filter_list);
+        //BOOST_SPIRIT_DEBUG_NODE(name);
+        //BOOST_SPIRIT_DEBUG_NODE(var_name);
+        //BOOST_SPIRIT_DEBUG_NODE(style_name);
     }
 };
 }

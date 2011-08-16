@@ -14,6 +14,10 @@
 #include <parse/parse_tree.hpp>
 #include <parse/filter_grammar.hpp>
 
+#include <utility/environment.hpp>
+#include <utility/utree.hpp>
+
+
 namespace carto {
 
 template<class Out>
@@ -21,23 +25,22 @@ struct filter_printer {
     typedef void result_type;
 
     Out& out;
-    annotations_type annotations;
-    int n_id,cur_id;
-    std::string prefix;
+    annotations_type const& annotations;
+    style_env const& env;
 
-    filter_printer (Out& out_, annotations_type const& annotations_)
+    filter_printer (Out& out_, annotations_type const& annotations_, style_env const& env_)
       : out(out_), 
         annotations(annotations_),
-        n_id(0),
-        cur_id(0),
-        prefix("node")
-    { }
+        env(env_)
+    {}
 
     void print(utree const& ut) {
         (*this)(ut);
     }
 
     void operator() (utree const& ut){
+        
+        //std::cout << ut << " " << ut.which() << " " << ut.tag() << " " << annotations[ut.tag()].second << "\n";
         
         using spirit::utree_type;
         
@@ -54,8 +57,27 @@ struct filter_printer {
             typedef utree::const_iterator iter;
             iter it = ut.begin(),
                 end = ut.end();
-
+            
+            std::string key;
+            
             switch (annotations[ut.tag()].second) {
+                case filter_var:
+                    //FIXME
+                    for (; it != end; ++it)
+                        key += detail::as<std::string>(*it);
+                    
+                    (*this)(*(env.vars.lookup(key)));
+                    break;
+                case filter_var_attr:
+                    //FIXME
+                    for (; it != end; ++it)
+                        key += detail::as<std::string>(*it);
+                    
+                    out << "[";
+                    (*this)(*(env.vars.lookup(key)));
+                    out << "]";
+                    break;
+                
                 case filter_and:
                     BOOST_ASSERT(ut.size()==2);
                     out << "(";
@@ -150,7 +172,6 @@ struct filter_printer {
                     out << "]";
                     break;
                 case filter_expression:
-                case filter_var:
                     break;
             }
         }
@@ -207,42 +228,43 @@ struct filter_printer {
     }
 };
 
+//template<class Char>
+//bool generate_filter( parse_tree const& in, std::basic_ostream<Char>& out)
+//{
+//    filter_printer<std::basic_ostream<Char> > printer(out, in.annotations());
+//    printer.print(in.ast());
+//    
+//    return true; 
+//}
+//
+//template<class Char>
+//bool generate_filter( parse_tree const& in, std::basic_string<Char>& out)
+//{
+//    std::basic_stringstream<Char> oss;
+//    filter_printer<std::basic_stringstream<Char> > printer(oss, in.annotations());
+//    printer.print(in.ast());
+//    
+//    out = oss.str();
+//    return true; 
+//}
 
 
 template<class Char>
-bool generate_filter( parse_tree const& in, std::basic_ostream<Char>& out)
+bool generate_filter( utree const& ast, annotations_type const& annotations, 
+                      style_env const& env, std::basic_ostream<Char>& out)
 {
-    filter_printer<std::basic_ostream<Char> > printer(out, in.annotations());
-    printer.print(in.ast());
-    
-    return true; 
-}
-
-template<class Char>
-bool generate_filter( utree const& ast, annotations_type const& annotations, std::basic_ostream<Char>& out)
-{
-    filter_printer<std::basic_ostream<Char> > printer(out, annotations);
+    filter_printer<std::basic_ostream<Char> > printer(out, annotations, env);
     printer.print(ast);
     
     return true; 
 }
 
 template<class Char>
-bool generate_filter( parse_tree const& in, std::basic_string<Char>& out)
+bool generate_filter( utree const& ast, annotations_type const& annotations, 
+                      style_env const& env, std::basic_string<Char>& out)
 {
     std::basic_stringstream<Char> oss;
-    filter_printer<std::basic_stringstream<Char> > printer(oss, in.annotations());
-    printer.print(in.ast());
-    
-    out = oss.str();
-    return true; 
-}
-
-template<class Char>
-bool generate_filter( utree const& ast, annotations_type const& annotations, std::basic_string<Char>& out)
-{
-    std::basic_stringstream<Char> oss;
-    filter_printer<std::basic_stringstream<Char> > printer(oss, annotations);
+    filter_printer<std::basic_stringstream<Char> > printer(oss, annotations, env);
     printer.print(ast);
     
     out = oss.str();

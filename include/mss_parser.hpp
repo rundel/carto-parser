@@ -43,23 +43,6 @@ namespace carto {
 
 using mapnik::config_error;
 
-struct style_env {
-    environment vars;
-    environment mixins;
-    
-    style_env() 
-      : vars(),
-        mixins() { }
-        
-    //style_env(environment vars_, environment mixins_)
-    //  : vars(vars_),
-    //    mixins(mixins_) { }
-        
-    style_env(style_env const& env)
-      : vars(env.vars),
-        mixins(env.mixins) { }
-};
-
 struct mss_parser {//}: public base_parser {
 
     parse_tree tree;
@@ -278,7 +261,7 @@ struct mss_parser {//}: public base_parser {
         }
     }
     
-    void parse_filter(mapnik::Map& map, utree const& node, style_env& env, mapnik::rule& rule)
+    void parse_filter(mapnik::Map& map, utree const& node, style_env const& env, mapnik::rule& rule)
     {
         if (node.size() == 0)
             return;
@@ -299,16 +282,17 @@ struct mss_parser {//}: public base_parser {
                 out += " and ";
             
             std::string str;
-            generate_filter(*it,tree.annotations(),str);
+            generate_filter(*it,tree.annotations(), env, str);
             
             out += str;
         }
         
+        std::cout << "Filter: " << out << "\n";
         // FIXME
         
         rule.set_filter(mapnik::parse_expression(out,"utf8"));
         
-        std::string s = mapnik::to_expression_string(rule.get_filter());
+        //std::string s = mapnik::to_expression_string(rule.get_filter());
     }
     
     

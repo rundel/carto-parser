@@ -33,13 +33,28 @@ enum filter_node_type
     filter_replace,
     filter_attribute,
     filter_expression,
-    filter_var
+    filter_var,
+    filter_var_attr
 };
 
 
 template<typename Iterator>
 struct filter_parser : qi::grammar< Iterator, utree(), space_type>
 {
+    
+    qi::rule<Iterator, utree(), space_type> logical_expr, not_expr, cond_expr, 
+                                            equality_expr, lhs_expr, rhs_expr, 
+                                            regex_match_expr, regex_replace_expr, 
+                                            ustring, null, var_name, var_attr, var,
+                                            attr, sq_attr; 
+    
+    utf8_string_parser<Iterator> utf8;
+    //expression_parser<Iterator> expression;
+    typedef error_handler_impl<Iterator> error_handler_type;
+    phoenix::function<error_handler_type> const error;
+    annotator<Iterator> annotate;
+    phoenix::function<combine_impl> const combine;
+    
     filter_parser (std::string const& source, annotations_type& annotations)
       : filter_parser::base_type(logical_expr),
         utf8(source),
@@ -89,24 +104,26 @@ struct filter_parser : qi::grammar< Iterator, utree(), space_type>
                                                    > ustring[combine(_val, _1)] > ')'
                                                    > annotate(_val, filter_replace);
         
-        //ustring = '\'' >> lexeme[*(char_-'\'')] >> '\'';
         ustring = lexeme[char_("'") > *(char_-'\'') > char_("'")];
         
         null = lit("null")[_val = utree::nil_type()];
 
         attr = lexeme[char_("a-zA-Z_") > *char_("a-zA-Z0-9_")] > annotate(_val, filter_attribute);
         sq_attr = '[' > attr > ']';
-        var_name = lexeme["@" > char_("a-zA-Z_") > *char_("a-zA-Z0-9_")] > annotate(_val, filter_var);
-
+        
+        var_name = lexeme["@" > char_("a-zA-Z_") >> *char_("a-zA-Z0-9_")];
+        var_attr = var_name > annotate(_val, filter_var_attr);
+        var      = var_name > annotate(_val, filter_var);
+        
         lhs_expr =   attr
                    | sq_attr
-                   | var_name;
+                   | var_attr;
         
         rhs_expr =   double_
                    | bool_
                    | null
                    | ustring
-                   | var_name;
+                   | var;
                    //| (expression[_val = _1] > annotate(_val, filter_expression))
                    //| lhs_expr[_val = _1];
 
@@ -121,19 +138,11 @@ struct filter_parser : qi::grammar< Iterator, utree(), space_type>
         //BOOST_SPIRIT_DEBUG_NODE(regex_match_expr);
         //BOOST_SPIRIT_DEBUG_NODE(regex_replace_expr);
         //BOOST_SPIRIT_DEBUG_NODE(ustring);
+        //BOOST_SPIRIT_DEBUG_NODE(attr);
+        //BOOST_SPIRIT_DEBUG_NODE(sq_attr);
+        //BOOST_SPIRIT_DEBUG_NODE(var_name);
     }
     
-    qi::rule<Iterator, utree(), space_type> logical_expr, not_expr, cond_expr, 
-                                            equality_expr, lhs_expr, rhs_expr, 
-                                            regex_match_expr, regex_replace_expr, 
-                                            ustring, null, var_name, attr, sq_attr; 
-    
-    utf8_string_parser<Iterator> utf8;
-    //expression_parser<Iterator> expression;
-    typedef error_handler_impl<Iterator> error_handler_type;
-    phoenix::function<error_handler_type> const error;
-    annotator<Iterator> annotate;
-    phoenix::function<combine_impl> const combine;
 };
 
 
