@@ -58,121 +58,108 @@ struct filter_printer {
             iter it = ut.begin(),
                 end = ut.end();
             
-            std::string key;
             
-            switch (annotations[ut.tag()].second) {
-                case filter_var:
-                    //FIXME
-                    for (; it != end; ++it)
-                        key += detail::as<std::string>(*it);
-                    
-                    (*this)(*(env.vars.lookup(key)));
-                    break;
-                case filter_var_attr:
-                    //FIXME
-                    for (; it != end; ++it)
-                        key += detail::as<std::string>(*it);
-                    
-                    out << "[";
-                    (*this)(*(env.vars.lookup(key)));
-                    out << "]";
-                    break;
+            int const node_type = annotations[ut.tag()].second;
+            
+            if (node_type == filter_var || node_type == filter_var_attr) {
+                std::string key;
                 
-                case filter_and:
-                    BOOST_ASSERT(ut.size()==2);
-                    out << "(";
-                    (*this)(*it++);
-                    out << " and ";
+                for (; it != end; ++it)
+                    key += detail::as<std::string>(*it);
+                    
+                utree const* value = env.vars.lookup(key);
+                
+                if (value == NULL) {
+                    std::string err = std::string("Unknown variable: @")+key; 
+                    throw config_error(err);
+                } 
+                    
+                if (node_type == filter_var_attr) out << "[";
+                (*this)(*value);
+                if (node_type == filter_var_attr) out << "]";
+            } else if (node_type == filter_and) {
+                BOOST_ASSERT(ut.size()==2);
+                out << "(";
+                (*this)(*it++);
+                out << " and ";
+                (*this)(*it);
+                out << ")";
+            } else if (node_type ==  filter_or) {
+                BOOST_ASSERT(ut.size()==2);
+                out << "(";
+                (*this)(*it++);
+                out << " or ";
+                (*this)(*it);
+                out << ")";
+            } else if (node_type == filter_not) {
+                BOOST_ASSERT(ut.size()==2);
+                out << "(not ";
+                (*this)(*it);
+                out << ")";
+            } else if (node_type == filter_eq) {
+                BOOST_ASSERT(ut.size()==2);
+                out << "(";
+                (*this)(*it++);
+                out << " = ";
+                (*this)(*it);
+                out << ")";
+            } else if (node_type == filter_neq) {
+                BOOST_ASSERT(ut.size()==2);
+                out << "(";
+                (*this)(*it++);
+                out << " != ";
+                (*this)(*it);
+                out << ")";
+            } else if (node_type ==  filter_le) {
+                BOOST_ASSERT(ut.size()==2);
+                out << "(";
+                (*this)(*it++);
+                out << " <= ";
+                (*this)(*it);
+                out << ")";
+            } else if (node_type ==  filter_lt) {
+                BOOST_ASSERT(ut.size()==2);
+                out << "(";
+                (*this)(*it++);
+                out << " < ";
+                (*this)(*it);
+                out << ")";
+            } else if (node_type ==  filter_ge) {
+                BOOST_ASSERT(ut.size()==2);
+                out << "(";
+                (*this)(*it++);
+                out << " >= ";
+                (*this)(*it);
+                out << ")";
+            } else if (node_type ==  filter_gt) {
+                BOOST_ASSERT(ut.size()==2);
+                out << "(";
+                (*this)(*it++);
+                out << " > ";
+                (*this)(*it);
+                out << ")";
+            } else if (node_type ==  filter_match) {
+                BOOST_ASSERT(ut.size()==2);
+                (*this)(*it++);
+                out << ".match('";
+                (*this)(*it);
+                out << "')";
+            } else if (node_type ==  filter_replace) {
+                BOOST_ASSERT(ut.size()==3);
+                (*this)(*it++);
+                out << ".replace('";
+                (*this)(*it++);
+                out << "','";
+                (*this)(*it);
+                out << "')";
+            } else if (node_type ==  filter_attribute) {
+                //BOOST_ASSERT(ut.size()==1);
+                out << "[";
+                for (; it != end; ++it)
                     (*this)(*it);
-                    out << ")";
-                    break;
-                case filter_or:
-                    BOOST_ASSERT(ut.size()==2);
-                    out << "(";
-                    (*this)(*it++);
-                    out << " or ";
-                    (*this)(*it);
-                    out << ")";
-                    break;
-                case filter_not:
-                    BOOST_ASSERT(ut.size()==2);
-                    out << "(not (";
-                    (*this)(*it);
-                    out << "))";
-                    break;
-                case filter_eq:
-                    BOOST_ASSERT(ut.size()==2);
-                    out << "(";
-                    (*this)(*it++);
-                    out << " = ";
-                    (*this)(*it);
-                    out << ")";
-                    break;
-                case filter_neq:
-                    BOOST_ASSERT(ut.size()==2);
-                    out << "(";
-                    (*this)(*it++);
-                    out << " != ";
-                    (*this)(*it);
-                    out << ")";
-                    break;
-                case filter_le:
-                    BOOST_ASSERT(ut.size()==2);
-                    out << "(";
-                    (*this)(*it++);
-                    out << " <= ";
-                    (*this)(*it);
-                    out << ")";
-                    break;
-                case filter_lt:
-                    BOOST_ASSERT(ut.size()==2);
-                    out << "(";
-                    (*this)(*it++);
-                    out << " < ";
-                    (*this)(*it);
-                    out << ")";
-                    break;
-                case filter_ge:
-                    BOOST_ASSERT(ut.size()==2);
-                    out << "(";
-                    (*this)(*it++);
-                    out << " >= ";
-                    (*this)(*it);
-                    out << ")";
-                    break;
-                case filter_gt:
-                    BOOST_ASSERT(ut.size()==2);
-                    out << "(";
-                    (*this)(*it++);
-                    out << " > ";
-                    (*this)(*it);
-                    out << ")";
-                    break;
-                case filter_match:
-                    BOOST_ASSERT(ut.size()==2);
-                    (*this)(*it++);
-                    out << ".match('";
-                    (*this)(*it);
-                    out << "')";
-                    break;
-                case filter_replace:
-                    BOOST_ASSERT(ut.size()==3);
-                    (*this)(*it++);
-                    out << ".replace('";
-                    (*this)(*it++);
-                    out << "','";
-                    (*this)(*it);
-                    out << "')";
-                    break;
-                case filter_attribute:
-                    //BOOST_ASSERT(ut.size()==1);
-                    out << "[";
-                    for (; it != end; ++it)
-                        (*this)(*it);
-                    out << "]";
-                    break;
-                case filter_expression:
-                    break;
+                out << "]";
+            } else if (node_type == filter_expression) {
+                
             }
         }
     }
