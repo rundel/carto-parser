@@ -287,9 +287,7 @@ struct mss_parser {//}: public base_parser {
             out += str;
         }
         
-        std::cout << "Filter: " << out << "\n";
         // FIXME
-        
         rule.set_filter(mapnik::parse_expression(out,"utf8"));
         
         //std::string s = mapnik::to_expression_string(rule.get_filter());
