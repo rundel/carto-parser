@@ -79,108 +79,69 @@ int main(int argc, char **argv) {
         filename = argv[3];
         p = path(argv[3]);
     }
-
-    mapnik::Map m(800,600);
     
-    if (p.extension() ==  ".mml") {
+    try {
+        mapnik::Map m(800,600);
+    
+        if (p.extension() ==  ".mml") {
         
-        carto::mml_parser parser = carto::load_mml(filename, false);
-        parser.parse_map(m);
+            carto::mml_parser parser = carto::load_mml(filename, false);
+            parser.parse_map(m);
 
-        parse_tree pt = parser.get_parse_tree();
-        std::string output;
+            parse_tree pt = parser.get_parse_tree();
+            std::string output;
         
-        switch(out) {
-            case out_ast:
-                std::cout << pt.ast();
-                break;
-            case out_json:
-                generate_json(pt,output);
-                break;
-            case out_dot:
-                generate_dot(pt,output);
-                break;
-            case out_xml:
-                output = mapnik::save_map_to_string(m,false);
-                break;
-        }
+            switch(out) {
+                case out_ast:
+                    std::cout << pt.ast();
+                    break;
+                case out_json:
+                    generate_json(pt,output);
+                    break;
+                case out_dot:
+                    generate_dot(pt,output);
+                    break;
+                case out_xml:
+                    output = mapnik::save_map_to_string(m,false);
+                    break;
+            }
         
-        std::cout << output << std::endl;
+            std::cout << output << std::endl;
                 
-    } else if (p.extension() ==  ".mss") {
-        
-        /*
-        std::ifstream file(filename, std::ios_base::in);
+        } else if (p.extension() ==  ".mss") {
 
-        if (!file) { 
-            std::cout << "Error: " << filename << " does not exist!\n";
+            carto::mss_parser parser = carto::load_mss(filename, false);
+            parser.parse_stylesheet(m);
+
+            parse_tree pt = parser.get_parse_tree();
+            std::string output;
+
+            switch(out) {
+                case out_ast:
+                    std::cout << pt.ast();
+                    break;
+                case out_xml:
+                    output = mapnik::save_map_to_string(m,false);
+                    break;
+                case out_json:
+                    //generate_json(pt,output);
+                    std::cout << "Not supported";
+                    break;
+                case out_dot:
+                    generate_mss_dot(pt,output);
+                    break;
+            }
+            std::cout << output << std::endl;
+        
+        } else {
+            std::cout << "Error: " << filename << " has an invalid extension " << p.extension() << "\n";
             return 1;
         }
-
-        std::string in;
-        file.unsetf(std::ios::skipws);
-        copy(std::istream_iterator<char>(file),
-             std::istream_iterator<char>(),
-             std::back_inserter(in));
-        
-        
-        
-        
-        using boost::spirit::utree;
-        using carto::position_iterator;
-        
-        utree ast;    
-        carto::annotations_type annotations;
-        
-        typedef position_iterator<std::string::const_iterator> iterator_type;
-        //typedef std::string::const_iterator iterator_type;
-        
-        
-        carto::carto_parser<iterator_type> p("file", annotations);
-
-        iterator_type first(in.begin());
-        iterator_type last(in.end());
-        
-        try {
-            bool r = boost::spirit::qi::phrase_parse(first, last, p, boost::spirit::ascii::space, ast);
-            if (!r) {
-                std::cout << "Parse failed\n";
-                return 1;
-            }
-        } catch (std::exception& e) {
-            std::cerr << "Error: " << e.what() << "\n";
-        } catch(...) {
-            std::cerr << "Error: Unknown error\n";
-        }*/
-        
-        carto::mss_parser parser = carto::load_mss(filename, false);
-        parser.parse_stylesheet(m);
-
-        parse_tree pt = parser.get_parse_tree();
-        std::string output;
-
-        switch(out) {
-            case out_ast:
-                std::cout << pt.ast();
-                break;
-            case out_xml:
-                output = mapnik::save_map_to_string(m,false);
-                break;
-            case out_json:
-                //generate_json(pt,output);
-                std::cout << "Not supported";
-                break;
-            case out_dot:
-                generate_mss_dot(pt,output);
-                break;
-        }
-        std::cout << output << std::endl;
-        
-    } else {
-        std::cout << "Error: " << filename << " has an invalid extension " << p.extension() << "\n";
-        return 1;
+    } catch (std::exception& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+    } catch(...) {
+        std::cerr << "Error: Unknown error\n";
     }
-
     
     return 0;
 }

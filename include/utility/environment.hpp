@@ -60,5 +60,24 @@ public:
         return definitions.count(name); 
     } 
 };
+
+
+struct style_env {
+    environment vars;
+    environment mixins;
+    
+    style_env() 
+      : vars(),
+        mixins() { }
+        
+    //style_env(environment vars_, environment mixins_)
+    //  : vars(vars_),
+    //    mixins(mixins_) { }
+        
+    style_env(style_env const& env)
+      : vars(env.vars),
+        mixins(env.mixins) { }
+};
+
 }
 #endif

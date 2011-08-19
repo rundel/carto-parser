@@ -8,6 +8,8 @@
 #ifndef PARSE_TREE_H
 #define PARSE_TREE_H
 
+#include <mapnik/config_error.hpp>
+
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/support_utree.hpp>
 #include <boost/spirit/home/support/assert_msg.hpp>
@@ -19,6 +21,7 @@
 namespace carto {
 
 using boost::spirit::utree;
+using mapnik::config_error;
 
 class parse_tree {
 
@@ -30,7 +33,10 @@ public:
     parse_tree(void)
       : _ast(), 
         _annotations()
-    { }
+    {
+        //FIXME - utree.tag() returns 0 even if not tagged so fill up 0 position 
+        _annotations.push_back(annotation_type());
+    }
     
     parse_tree& operator= (parse_tree const& other) {
         if (!equal(other)) {
@@ -80,22 +86,20 @@ private:
 };
 
 template<typename parser_type>
-parse_tree build_parse_tree(std::string const& in)
+parse_tree build_parse_tree(std::string const& in, std::string const& path = "./")
 { 
     parse_tree pt;
     
-    typedef position_iterator<std::string::const_iterator> iterator_type;
+    typedef position_iterator<std::string::const_iterator> iter;
     
-    //FIXME - std::string should be source or something
-    parser_type p("std::string", pt.annotations());
-    //json_parser<iterator_type> p("std::string", _annotations);
-
-    iterator_type first(in.begin());
-    iterator_type last(in.end());
+    parser_type p(path, pt.annotations());
+    
+    iter first(in.begin()),
+         last(in.end());
 
     bool r = qi::phrase_parse(first, last, p, boost::spirit::ascii::space, pt.ast());
     if (!r)
-        std::cout << "Parse failed\n";
+        throw config_error("Parser failed!");
     
     return pt;
 }
