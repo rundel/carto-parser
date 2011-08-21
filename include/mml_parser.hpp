@@ -79,12 +79,12 @@ struct mml_parser {
         
         std::stringstream err;
         err << "Unknown keyword: " << key
-            << " at " << get_location(node).get_string() << "\n"; 
+            << " at " << get_location(node).get_string(); 
         
         if (strict)
             throw config_error(err.str());
         else
-            std::clog << "### WARNING: " << err.str() << std::endl;    
+            std::clog << "### WARNING: " << err.str() << "\n";    
     }
     
     void parse_map(mapnik::Map& map)

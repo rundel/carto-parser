@@ -120,13 +120,13 @@ struct mss_parser {
         agg::trans_affine tr;
         if (!mapnik::svg::parse_transform(str,tr))
         {
-            std::stringstream ss;
-            ss << "Could not parse transform from '" << str 
-               << "', expected string like: 'matrix(1, 0, 0, 1, 0, 0)'";
+            std::stringstream err;
+            err << "Could not parse transform from '" << str 
+                << "', expected string like: 'matrix(1, 0, 0, 1, 0, 0)'";
             if (strict)
-                throw config_error(ss.str()); // value_error here?
+                throw config_error(err.str()); // value_error here?
             else
-                std::clog << "### WARNING: " << ss << std::endl;         
+                std::clog << "### WARNING: " << err << std::endl;         
         }
         mapnik::transform_type matrix;
         tr.store_to(&matrix[0]);
@@ -138,12 +138,12 @@ struct mss_parser {
         
         std::stringstream err;
         err << "Unknown variable: @" << key
-            << " at " << get_location(node).get_string() << "\n"; 
+            << " at " << get_location(node).get_string() ; 
         
         if (strict)
             throw config_error(err.str());
         else
-            std::clog << "### WARNING: " << err.str() << std::endl;    
+            std::clog << "### WARNING: " << err.str() << "\n";    
     }
     
     void parse_stylesheet(mapnik::Map& map)
@@ -176,7 +176,7 @@ struct mss_parser {
                 {
                     std::stringstream out;
                     out << "Invalid stylesheet node type: " << get_node_type(*it)
-                        << " at " << get_location(*it).get_string() << "\n";
+                        << " at " << get_location(*it).get_string();
                     throw config_error(out.str());
                 }
             }
@@ -237,7 +237,7 @@ struct mss_parser {
                     default:
                         std::stringstream out;
                         out << "Invalid style node type: " << get_node_type(*it)
-                            << " at " << get_location(*it).get_string() << "\n";
+                            << " at " << get_location(*it).get_string();
                         throw config_error(out.str());
                 }
             }
@@ -337,7 +337,7 @@ struct mss_parser {
         if (value == NULL) {
             std::stringstream err;
             err << "Unknown variable: @" << key
-                << " at " << get_location(node).get_string() << "\n"; 
+                << " at " << get_location(node).get_string(); 
             throw config_error(err.str());
         }
         
