@@ -804,9 +804,9 @@ mapnik::line_pattern_symbolizer mss_parser::init_symbolizer<mapnik::line_pattern
     return mapnik::line_pattern_symbolizer(mapnik::parse_path(""));
 }
 
-mss_parser load_mss(char const* filename, bool strict)
+mss_parser load_mss(std::string filename, bool strict)
 {
-    std::ifstream file(filename, std::ios_base::in);
+    std::ifstream file(filename.c_str(), std::ios_base::in);
 
     if (!file)
         throw std::exception();

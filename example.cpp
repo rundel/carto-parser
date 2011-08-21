@@ -17,19 +17,13 @@
 
 #include <mapnik/save_map.hpp>
 
-#include <boost/filesystem.hpp>
-
+#include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <boost/spirit/include/support_utree.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <position_iterator.hpp>
 
-enum out_type {
-    out_ast,
-    out_json,
-    out_dot,
-    out_xml
-};
 
 int main(int argc, char **argv) {
 
@@ -42,101 +36,83 @@ int main(int argc, char **argv) {
     std::string mapnik_dir = MAPNIKDIR;
     mapnik::datasource_cache::instance()->register_datasources(mapnik_dir); 
     
-    char const* filename;
-    path p;
+    namespace po = boost::program_options;
     
-    out_type out = out_xml;
+    std::string mapnik_input_dir = MAPNIKDIR;
     
-    std::string usage = std::string("Usage: ") + argv[0] + " [-o output] <filename>\n";
+    std::string input_file, output_file;
     
-    if (argc != 2 && argc != 4) {
-        std::cout << usage;
+    po::options_description desc("carto2xml");
+    desc.add_options()
+        ("help,h", "produce usage message")
+        ("version,V","print version string")
+        ("in", po::value<std::string>(&input_file),  "input carto file (mml or mss)")
+        ("out", po::value<std::string>(&output_file), "output xml file");
+    
+    std::string usage("\nusage: xml2carto map.[mml|mss] [map.xml]");
+    
+    po::positional_options_description p;
+    p.add("in",1).add("out",1);
+    
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+    po::notify(vm);
+    
+    if (vm.count("version"))
+    {
+        std::cout << "version 0.0.0" << std::endl;
         return 1;
-    } else if (argc == 2) {
-        filename = argv[1];
-        p = path(argv[1]);
-    } else {
-        if (strncmp(argv[1],"-o",2) != 0) {
-            std::cout << usage;
-            std::cout << "\"" << argv[1] << "\" option not recognized.\n";
-            return 1;
-        }
-        
-        if (strncmp(argv[2],"ast",3)==0)
-            out = out_ast;
-        else if (strncmp(argv[2],"json",4)==0)
-            out = out_json;
-        else if (strncmp(argv[2],"dot",3)==0)
-            out = out_dot;
-        else if (strncmp(argv[2],"xml",3)==0)
-            out = out_xml;
-        else {
-            std::cout << usage;
-            std::cout << "output must be one of the following values: ast, json, dot, xml.\n";
-            return 1;
-        }
-            
-        filename = argv[3];
-        p = path(argv[3]);
     }
+
+    if (vm.count("help")) 
+    {
+        std::cout << desc << usage << std::endl;
+        return 1;
+    }
+
+    if (!vm.count("in") 
+         || (    !boost::algorithm::ends_with(input_file,".mml")
+              && !boost::algorithm::ends_with(input_file,".mss") )
+       )
+    {
+        std::cout << "Please provide an input carto file\n" << std::endl;
+        std::cout << desc << usage << std::endl;
+        return 1;
+    }
+
+
     
     try {
         mapnik::Map m(800,600);
-    
-        if (p.extension() ==  ".mml") {
         
-            carto::mml_parser parser = carto::load_mml(filename, false);
+        if (boost::algorithm::ends_with(input_file,".mml"))
+        {
+            carto::mml_parser parser = carto::load_mml(input_file, false);
             parser.parse_map(m);
-
-            parse_tree pt = parser.get_parse_tree();
-            std::string output;
-        
-            switch(out) {
-                case out_ast:
-                    std::cout << pt.ast();
-                    break;
-                case out_json:
-                    generate_json(pt,output);
-                    break;
-                case out_dot:
-                    generate_dot(pt,output);
-                    break;
-                case out_xml:
-                    output = mapnik::save_map_to_string(m,false);
-                    break;
-            }
-        
-            std::cout << output << std::endl;
-                
-        } else if (p.extension() ==  ".mss") {
-
-            carto::mss_parser parser = carto::load_mss(filename, false);
-            parser.parse_stylesheet(m);
-
-            parse_tree pt = parser.get_parse_tree();
-            std::string output;
-
-            switch(out) {
-                case out_ast:
-                    std::cout << pt.ast();
-                    break;
-                case out_xml:
-                    output = mapnik::save_map_to_string(m,false);
-                    break;
-                case out_json:
-                    //generate_json(pt,output);
-                    std::cout << "Not supported";
-                    break;
-                case out_dot:
-                    generate_mss_dot(pt,output);
-                    break;
-            }
-            std::cout << output << std::endl;
-        
-        } else {
-            std::cout << "Error: " << filename << " has an invalid extension " << p.extension() << "\n";
-            return 1;
         }
+        else if (boost::algorithm::ends_with(input_file,".mss")) 
+        {
+            carto::mss_parser parser = carto::load_mss(input_file, false);
+            parser.parse_stylesheet(m);
+        }
+        
+        std::string output = mapnik::save_map_to_string(m,false);
+        
+        if (!vm.count("out")) {
+            std::cout << output << std::endl;
+        } else {
+            std::ofstream file;
+            file.open(output_file.c_str());
+            if (!file.is_open()) {
+                std::cout << "Error: could not save xml to: " << output_file << "\n";
+                return EXIT_FAILURE;
+            }
+            file << output;
+            file.close();
+        }
+            
+            
+       
     } catch (std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
     } catch(...) {
