@@ -78,7 +78,7 @@ struct mml_parser {
     void key_error(std::string const& key, utree const& node) {
         
         std::stringstream err;
-        err << "Unknown variable: @" << key
+        err << "Unknown keyword: " << key
             << " at " << get_location(node).get_string() << "\n"; 
         
         if (strict)
