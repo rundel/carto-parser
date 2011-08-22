@@ -120,13 +120,13 @@ struct mss_parser {
         agg::trans_affine tr;
         if (!mapnik::svg::parse_transform(str,tr))
         {
-            std::stringstream ss;
-            ss << "Could not parse transform from '" << str 
-               << "', expected string like: 'matrix(1, 0, 0, 1, 0, 0)'";
+            std::stringstream err;
+            err << "Could not parse transform from '" << str 
+                << "', expected string like: 'matrix(1, 0, 0, 1, 0, 0)'";
             if (strict)
-                throw config_error(ss.str()); // value_error here?
+                throw config_error(err.str()); // value_error here?
             else
-                std::clog << "### WARNING: " << ss << std::endl;         
+                std::clog << "### WARNING: " << err << std::endl;         
         }
         mapnik::transform_type matrix;
         tr.store_to(&matrix[0]);
@@ -134,13 +134,16 @@ struct mss_parser {
         return matrix;
     }
     
-    void key_error(std::string const& key) {
+    void key_error(std::string const& key, utree const& node) {
         
-        std::string err = std::string("Unknown attribute keyword: ")+key; 
+        std::stringstream err;
+        err << "Unknown variable: @" << key
+            << " at " << get_location(node).get_string() ; 
+        
         if (strict)
-            throw config_error(err);
+            throw config_error(err.str());
         else
-            std::clog << "### WARNING: " << err << std::endl;    
+            std::clog << "### WARNING: " << err.str() << "\n";    
     }
     
     void parse_stylesheet(mapnik::Map& map)
@@ -156,36 +159,28 @@ struct mss_parser {
             end = root_node.end();
         
         for (; it != end; ++it) {
-            try {
-                switch((carto_node_type) get_node_type(*it)) {
-                    case carto_variable:
-                        env.vars.define(as<std::string>((*it).front()), (*it).back());
-                        break;
-                    case carto_mixin:
-                    
-                        break;
-                    case carto_map_style:
-                        parse_map_style(map, *it, env);
-                        break;
-                    case carto_style:
-                        parse_style(map, *it, env);
-                        break;
-                    default:
-                    {
-                        std::stringstream out;
-                        out << "Invalid stylesheet node type: " << get_node_type(*it) << "\n";
-                        throw config_error(out.str());
-                    }
-                }
-            } catch (std::exception& e) {
-                std::cerr << "Error: " << e.what() << " at " << get_location(*it).get_string() << "\n";
+            switch((carto_node_type) get_node_type(*it)) {
+                case carto_variable:
+                    env.vars.define(as<std::string>((*it).front()), (*it).back());
+                    break;
+                case carto_mixin:
                 
-                if (strict) break;
-            } catch (...) {
-                std::cerr << "Error: Unknown error at " << get_location(*it).get_string() << "\n";
-
-                if (strict) break;
-            }          
+                    break;
+                case carto_map_style:
+                    parse_map_style(map, *it, env);
+                    break;
+                case carto_style:
+                    parse_style(map, *it, env);
+                    break;
+                default:
+                {
+                    std::stringstream out;
+                    out << "Invalid stylesheet node type: " << get_node_type(*it)
+                        << " at " << get_location(*it).get_string();
+                    throw config_error(out.str());
+                }
+            }
+          
          }
     }
     
@@ -241,7 +236,8 @@ struct mss_parser {
                         break;
                     default:
                         std::stringstream out;
-                        out << "Invalid style node type: " << get_node_type(*it) << "\n";
+                        out << "Invalid style node type: " << get_node_type(*it)
+                            << " at " << get_location(*it).get_string();
                         throw config_error(out.str());
                 }
             }
@@ -321,7 +317,7 @@ struct mss_parser {
         else if (key.substr(0,7) == "shield-")
             parse_shield(rule,key,node,env);
         else 
-            key_error(key);
+            key_error(key, node);
     }
     
     utree const& parse_value(utree const& node, style_env const& env) 
@@ -339,8 +335,10 @@ struct mss_parser {
         utree const* value = env.vars.lookup(key);
         
         if (value == NULL) {
-            std::string err = std::string("Unknown variable: @")+key; 
-            throw config_error(err);
+            std::stringstream err;
+            err << "Unknown variable: @" << key
+                << " at " << get_location(node).get_string(); 
+            throw config_error(err.str());
         }
         
         return *value;
@@ -360,7 +358,7 @@ struct mss_parser {
         } else if (key == "polygon-opacity") {
             s->set_opacity(as<double>(value));
         } else {
-            key_error(key);
+            key_error(key, node);
         }
     }
     
@@ -409,7 +407,7 @@ struct mss_parser {
         } else if (key == "line-dash-offset") {
             strk.set_dash_offset(as<double>(value));
         } else {
-            key_error(key);
+            key_error(key,node);
         }
         
         s->set_stroke(strk);
@@ -457,7 +455,7 @@ struct mss_parser {
         } else if (key == "marker-transform") {
             s->set_transform(create_transform(as<std::string>(value)));
         } else {
-            key_error(key);
+            key_error(key,node);
         }
     }
     
@@ -483,7 +481,7 @@ struct mss_parser {
         } else if (key == "point-transform") {
             s->set_transform(create_transform(as<std::string>(value)));
         } else {
-            key_error(key);
+            key_error(key,node);
         }
     }
     
@@ -497,7 +495,7 @@ struct mss_parser {
         if (key == "line-pattern-file") {
             s->set_filename(mapnik::parse_path(as<std::string>(value)));
         } else {
-            key_error(key);
+            key_error(key,node);
         }
     }
     
@@ -515,7 +513,7 @@ struct mss_parser {
             en.from_string(as<std::string>(value));
             s->set_alignment(en);
         } else {
-            key_error(key);
+            key_error(key,node);
         }
     }
     
@@ -533,7 +531,7 @@ struct mss_parser {
         } else if (key == "raster-scaling") {
             s->set_scaling(as<std::string>(value));
         } else {
-            key_error(key);
+            key_error(key,node);
         }
     }
     
@@ -551,7 +549,7 @@ struct mss_parser {
         } else if (key == "building-height") {
             s->set_height(as<double>(value));
         } else {
-            key_error(key);
+            key_error(key,node);
         }
     }
     
@@ -657,7 +655,7 @@ struct mss_parser {
             en.from_string(as<std::string>(value));
             s->set_text_transform(en);
         } else {
-            key_error(key);
+            key_error(key,node);
         }
     }
     
@@ -706,7 +704,7 @@ struct mss_parser {
             en.from_string(as<std::string>(value));
             s->set_label_placement(en);
         } else {
-            key_error(key);
+            key_error(key,node);
         }
     }
     
@@ -757,7 +755,7 @@ struct mss_parser {
                 int min_ver = version_from_string(ver_str);
                 
                 if (min_ver == -1 && strict) {
-                    throw config_error(std::string("Invalid version string") + ver_str);
+                    throw config_error(std::string("Invalid version string ") + ver_str);
                 } else if (min_ver > MAPNIK_VERSION) {
                     throw config_error(std::string("This map uses features only present in Mapnik version ") + ver_str + " and newer");
                 }
@@ -767,7 +765,7 @@ struct mss_parser {
                 extra_attr["font-directory"] = dir;
                 //freetype_engine::register_fonts( ensure_relative_to_xml(dir), false);
             } else {
-                key_error(key);
+                key_error(key,node);
             }
         }
         
@@ -804,13 +802,13 @@ mapnik::line_pattern_symbolizer mss_parser::init_symbolizer<mapnik::line_pattern
     return mapnik::line_pattern_symbolizer(mapnik::parse_path(""));
 }
 
-mss_parser load_mss(char const* filename, bool strict)
+mss_parser load_mss(std::string filename, bool strict)
 {
-    std::ifstream file(filename, std::ios_base::in);
+    std::ifstream file(filename.c_str(), std::ios_base::in);
 
     if (!file)
-        throw std::exception();
-
+        throw config_error(std::string("Cannot open input file: ")+filename);
+    
     std::string in;
     file.unsetf(std::ios::skipws);
     copy(std::istream_iterator<char>(file),

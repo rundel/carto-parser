@@ -11,9 +11,6 @@
 #include <iosfwd>
 #include <sstream>
 
-#include <parse/parse_tree.hpp>
-#include <parse/json_grammar.hpp>
-
 #include <mapnik/map.hpp>
 #include <mapnik/layer.hpp>
 #include <mapnik/config_error.hpp>
@@ -21,6 +18,12 @@
 #include <mapnik/datasource.hpp>
 #include <mapnik/datasource_cache.hpp>
 
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
+
+#include <mss_parser.hpp>
+#include <parse/parse_tree.hpp>
+#include <parse/json_grammar.hpp>
 #include <utility/utree.hpp>
 
 namespace carto {
@@ -43,7 +46,7 @@ struct mml_parser {
         path(path_) 
     { 
         typedef position_iterator<std::string::const_iterator> it_type;
-        tree = build_parse_tree< json_parser<it_type> >(in);    
+        tree = build_parse_tree< json_parser<it_type> >(in, path);    
     }
     
     template<class T>
@@ -71,14 +74,26 @@ struct mml_parser {
     {    
         return tree.annotations()[ut.tag()].first;
     }
-
+    
+    void key_error(std::string const& key, utree const& node) {
+        
+        std::stringstream err;
+        err << "Unknown keyword: " << key
+            << " at " << get_location(node).get_string(); 
+        
+        if (strict)
+            throw config_error(err.str());
+        else
+            std::clog << "### WARNING: " << err.str() << "\n";    
+    }
+    
     void parse_map(mapnik::Map& map)
     {
-        using spirit::utree_type;
-        typedef utree::iterator iter;
+        //using spirit::utree_type;
+        typedef utree::const_iterator iter;
         
         
-        utree root_node = tree.ast();
+        utree const& root_node = tree.ast();
         
         BOOST_ASSERT(get_node_type(root_node) == json_object);
         
@@ -86,39 +101,77 @@ struct mml_parser {
             end = root_node.front().end();
         
         for (; it != end; ++it) {
-            try {
-                BOOST_ASSERT((*it).size()==2);
+            BOOST_ASSERT((*it).size()==2);
+        
+            std::string key = as<std::string>((*it).front());
+            utree const& value = (*it).back();  
+        
+            if (key == "srs") {
+                map.set_srs( as<std::string>(value) );
+            } else if (key == "Stylesheet") {
+                BOOST_ASSERT(get_node_type(value) == json_array);
+                parse_stylesheet(map, value);
+            } else if (key == "Layer") {
+                BOOST_ASSERT(get_node_type(value) == json_array);
             
-                std::string key = as<std::string>((*it).front());
-                utree& value = (*it).back();  
+                iter lyr_it  = value.begin(), 
+                     lyr_end = value.end();
             
-                if (key == "srs") {
-                    map.set_srs( as<std::string>(value) );
-                } else if (key == "Stylesheet") {
-                
-                } else if (key == "Layer") {
-                    BOOST_ASSERT(get_node_type(value) == json_array);
-                
-                    iter lyr_it  = value.begin(), 
-                         lyr_end = value.end();
-                
-                    for (; lyr_it != lyr_end; ++lyr_it) {
-                        BOOST_ASSERT(get_node_type(*lyr_it) == json_object);
-                        parse_layer(map, (*lyr_it).front()) ;
-                    }
-                } else {
-                    throw config_error(std::string("Unknown keyword: ")+key);
+                for (; lyr_it != lyr_end; ++lyr_it) {
+                    BOOST_ASSERT(get_node_type(*lyr_it) == json_object);
+                    parse_layer(map, (*lyr_it).front()) ;
                 }
-            } catch (std::exception& e) {
-                std::cerr << "Error: " << e.what() << " at " << get_location(*it).get_string() << "\n";
-                
-                if (strict) break;
-            } catch (...) {
-                std::cerr << "Error: Unknown error at " << get_location(*it).get_string() << "\n";
-
-                if (strict) break;
-            }          
-         }
+            } else {
+                key_error(key, *it);
+            }        
+        }
+        
+        typedef std::vector<mapnik::layer> layers;
+        layers& l = map.layers(); 
+        
+        layers::iterator l_it  = l.begin(),
+                         l_end = l.end();
+        
+        for(; l_it!=l_end; ++l_it) {
+            std::string name( (*l_it).name() );
+            
+            if (name != "") {            
+                boost::algorithm::to_lower(name);
+                boost::algorithm::replace_all(name, " ", "_");
+            
+                if (map.find_style(name))
+                    (*l_it).add_style(name);
+            }
+        }
+    }
+    
+    void parse_stylesheet(mapnik::Map& map, utree const& node)
+    {
+        using namespace boost;
+        
+        typedef utree::const_iterator iter;
+        
+        iter it  = node.begin(), 
+             end = node.end();
+        
+        filesystem::path parent_dir = filesystem::path(path).parent_path();
+        
+        for (; it != end; ++it) {
+            std::string data( as<std::string>(*it) );
+            filesystem::path abs_path( data ),
+                             rel_path = parent_dir / abs_path;
+            
+            if (filesystem::exists(abs_path)) {
+                mss_parser parser = load_mss(abs_path.string(), strict);
+                parser.parse_stylesheet(map);
+            } else if (filesystem::exists(rel_path)) {
+                mss_parser parser = load_mss(rel_path.string(), strict);
+                parser.parse_stylesheet(map);
+            } else {
+                mss_parser parser(data, strict, path);
+                parser.parse_stylesheet(map);
+            }
+        }
     }
     
     void parse_layer(mapnik::Map& map, utree const& node)
@@ -130,42 +183,34 @@ struct mml_parser {
              end = node.end();
         
         for (; it != end; ++it) {
-            try {
-                BOOST_ASSERT((*it).size()==2);
+            BOOST_ASSERT((*it).size()==2);
+        
+            std::string key = as<std::string>((*it).front());
+            utree const& value = (*it).back();
+        
+            if (key == "id") {
             
-                std::string key = as<std::string>((*it).front());
-                utree const& value = (*it).back();
-            
-                if (key == "id") {
-                
-                } else if (key == "name") {
-                    lyr.set_name( as<std::string>(value) );
-                } else if (key == "srs") {
-                    lyr.set_srs( as<std::string>(value) );
-                } else if (key == "status") {
-                    lyr.setActive( as<bool>(value) );
-                } else if (key == "title") {
-                    lyr.set_title( as<std::string>(value) );
-                } else if (key == "abstract") {
-                    lyr.set_abstract( as<std::string>(value) );
-                } else if (key == "minzoom") {
-                    lyr.setMinZoom( value.get<double>() );
-                } else if (key == "maxzoom") {
-                    lyr.setMaxZoom( value.get<double>() );
-                } else if (key == "queryable") {
-                    lyr.setQueryable( value.get<bool>() );
-                } else if (key == "Datasource") {
-                    BOOST_ASSERT(get_node_type(value) == json_object);
-                
-                    parse_Datasource(lyr, value.front());
-                
-                } else {
-                    throw config_error(std::string("Unknown keyword: ")+key);
-                }
-            } catch (std::exception& e) {
-                throw config_error( e.what() );
-            } catch (...) {
-                throw config_error( "Unknown error - parse_layer" );
+            } else if (key == "name") {
+                lyr.set_name( as<std::string>(value) );
+            } else if (key == "srs") {
+                lyr.set_srs( as<std::string>(value) );
+            } else if (key == "status") {
+                lyr.setActive( as<bool>(value) );
+            } else if (key == "title") {
+                lyr.set_title( as<std::string>(value) );
+            } else if (key == "abstract") {
+                lyr.set_abstract( as<std::string>(value) );
+            } else if (key == "minzoom") {
+                lyr.setMinZoom( value.get<double>() );
+            } else if (key == "maxzoom") {
+                lyr.setMaxZoom( value.get<double>() );
+            } else if (key == "queryable") {
+                lyr.setQueryable( value.get<bool>() );
+            } else if (key == "Datasource") {
+                BOOST_ASSERT(get_node_type(value) == json_object);
+                parse_Datasource(lyr, value.front());
+            } else {
+                key_error(key, *it);
             }
         }
         
@@ -200,17 +245,9 @@ struct mml_parser {
         //    params["file"] = ensure_relative_to_xml(file_param);
         //}
 
-        try {
-            boost::shared_ptr<mapnik::datasource> ds =
-                mapnik::datasource_cache::instance()->create(params);
-            lyr.set_datasource(ds);
-        } catch (const mapnik::config_error & ex ) {
-            throw config_error( ex.what() );
-        } catch (const mapnik::datasource_exception & ex ) {
-            throw config_error( ex.what() );
-        } catch (...) {
-            throw config_error("Unknown exception - parse_Datasource");
-        }
+        boost::shared_ptr<mapnik::datasource> ds = mapnik::datasource_cache::instance()->create(params);
+        lyr.set_datasource(ds);
+
     }
     
 };
@@ -218,13 +255,14 @@ struct mml_parser {
 
 
 
-mml_parser load_mml(char const* filename, bool strict)
+mml_parser load_mml(std::string filename, bool strict)
 {
-    std::ifstream file(filename, std::ios_base::in);
+    std::ifstream file(filename.c_str(), std::ios_base::in);
 
     if (!file)
-        throw std::exception();
-
+        throw config_error(std::string("Cannot open input file: ")+filename);
+        
+    
     std::string in;
     file.unsetf(std::ios::skipws);
     copy(std::istream_iterator<char>(file),
