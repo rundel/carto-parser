@@ -565,7 +565,7 @@ struct mss_parser {
                 it  = value.begin();
                 end = value.end();
                 
-                std::size_t seed;
+                std::size_t seed = 0;
                 for( ; it!=end; ++it)
                     boost::hash_combine(seed, as<std::string>(*it));
                 
@@ -574,7 +574,7 @@ struct mss_parser {
                 
                 std::string name = ss.str();
                 
-                // FIXME - font_set has not set_name method so have to do this with two loops
+                // FIXME - font_set does not have a/ set_name method so have to do this with two loops
                 it  = value.begin();
                 end = value.end();
                 
