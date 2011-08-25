@@ -139,8 +139,6 @@ struct mml_parser {
             if (loc != std::string::npos)
                 prefix.replace(loc,prefix.length(),"");
             
-            std::cout << name << " " << prefix << "\n";
-            
             if (prefix != "") {
                 
                 typedef std::map<std::string, int> lookup_type;
@@ -283,11 +281,13 @@ struct mml_parser {
         } catch (std::exception& e) {
             
             std::stringstream err;
-            err << "Error: Datasource creation issue ("
+            err << "Datasource creation issue ("
                 << e.what() << ") at " << get_location(node).get_string(); 
 
-            throw config_error(err.str());
-            
+            if (strict)
+                throw config_error(err.str());
+            else
+                std::clog << "### WARNING: " << err.str() << "\n";
         }
     }
     
