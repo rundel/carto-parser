@@ -67,15 +67,15 @@ struct filter_printer {
                 for (; it != end; ++it)
                     key += detail::as<std::string>(*it);
                     
-                utree const* value = env.vars.lookup(key);
+                utree value = env.vars.lookup(key);
                 
-                if (value == NULL) {
+                if (value == utree::nil_type()) {
                     std::string err = std::string("Unknown variable: @")+key; 
                     throw config_error(err);
                 } 
                     
                 if (node_type == filter_var_attr) out << "[";
-                (*this)(*value);
+                (*this)(value);
                 if (node_type == filter_var_attr) out << "]";
             } else if (node_type == filter_and) {
                 BOOST_ASSERT(ut.size()==2);

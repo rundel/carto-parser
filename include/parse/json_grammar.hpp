@@ -23,7 +23,6 @@ namespace carto {
 namespace phoenix = boost::phoenix;
 namespace ascii = boost::spirit::ascii;
 
-using ascii::space_type;
 using boost::spirit::utf8_symbol_type;
 
 enum node_type
@@ -36,12 +35,12 @@ enum node_type
 
 
 template<typename Iterator>
-struct json_parser : qi::grammar< Iterator, utree(), space_type>
+struct json_parser : qi::grammar< Iterator, utree(), ascii::space_type>
 {
-    qi::rule<Iterator, utree(), space_type> start, value;
-    qi::rule<Iterator, utree::list_type(), space_type> member_pair, object, array;
+    qi::rule<Iterator, utree(), ascii::space_type> start, value;
+    qi::rule<Iterator, utree::list_type(), ascii::space_type> member_pair, object, array;
     qi::rule<Iterator, utf8_symbol_type()> member;
-    qi::rule<Iterator, utf8_symbol_type(), space_type> empty_object, empty_array;
+    qi::rule<Iterator, utf8_symbol_type(), ascii::space_type> empty_object, empty_array;
     qi::rule<Iterator, utree::nil_type()> null;
 
     utf8_string_parser<Iterator> utf8;

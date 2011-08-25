@@ -35,6 +35,7 @@ struct mml_parser {
     parse_tree tree;
     bool strict;
     std::string path;
+    std::map<std::string, int> layer_lookup;
     
     mml_parser(parse_tree const& pt, bool strict_ = false, std::string const& path_ = "./")
       : tree(pt),
@@ -126,50 +127,61 @@ struct mml_parser {
             }        
         }
         
-        typedef std::vector<mapnik::layer> layers;
-        layers& l = map.layers(); 
+        mapnik::Map::const_style_iterator s_it  =  map.begin_styles(),
+                                          s_end =  map.end_styles();
         
-        layers::iterator l_it  = l.begin(),
-                         l_end = l.end();
-        
-        for(; l_it!=l_end; ++l_it) {
-            std::string name( (*l_it).name() );
+        for(; s_it!=s_end; ++s_it) {
+            std::string name   = (*s_it).first,
+                        prefix = (*s_it).first;
             
-            if (name != "") {            
-                boost::algorithm::to_lower(name);
-                boost::algorithm::replace_all(name, " ", "_");
+            size_t loc = prefix.find(".",1);
             
-                if (map.find_style(name))
-                    (*l_it).add_style(name);
+            if (loc != std::string::npos)
+                prefix.replace(loc,prefix.length(),"");
+            
+            std::cout << name << " " << prefix << "\n";
+            
+            if (prefix != "") {
+                
+                typedef std::map<std::string, int> lookup_type;
+                
+                lookup_type::const_iterator l_it  = layer_lookup.find(prefix),
+                                            l_end = layer_lookup.end();
+                if (l_it != l_end) {
+                    map.getLayer(l_it->second).add_style(name);
+                } else {
+                    
+                }
             }
         }
     }
     
     void parse_stylesheet(mapnik::Map& map, utree const& node)
     {
-        using namespace boost;
+        namespace fs = boost::filesystem;
         
         typedef utree::const_iterator iter;
         
         iter it  = node.begin(), 
              end = node.end();
         
-        filesystem::path parent_dir = filesystem::path(path).parent_path();
+        fs::path parent_dir = fs::path(path).parent_path();
         
+        style_env env;
         for (; it != end; ++it) {
             std::string data( as<std::string>(*it) );
-            filesystem::path abs_path( data ),
+            fs::path abs_path( data ),
                              rel_path = parent_dir / abs_path;
             
-            if (filesystem::exists(abs_path)) {
+            if (fs::exists(abs_path)) {
                 mss_parser parser = load_mss(abs_path.string(), strict);
-                parser.parse_stylesheet(map);
-            } else if (filesystem::exists(rel_path)) {
+                parser.parse_stylesheet(map, env);
+            } else if (fs::exists(rel_path)) {
                 mss_parser parser = load_mss(rel_path.string(), strict);
-                parser.parse_stylesheet(map);
+                parser.parse_stylesheet(map, env);
             } else {
                 mss_parser parser(data, strict, path);
-                parser.parse_stylesheet(map);
+                parser.parse_stylesheet(map, env);
             }
         }
     }
@@ -177,6 +189,8 @@ struct mml_parser {
     void parse_layer(mapnik::Map& map, utree const& node)
     {
         mapnik::layer lyr("","");
+        
+        std::string lyr_name, lyr_id, lyr_class;
         
         typedef utree::const_iterator iter;
         iter it  = node.begin(), 
@@ -189,9 +203,12 @@ struct mml_parser {
             utree const& value = (*it).back();
         
             if (key == "id") {
-            
+                lyr_id = "#"+as<std::string>(value);
+            } else if (key == "class") {
+                lyr_class = "."+as<std::string>(value);
             } else if (key == "name") {
-                lyr.set_name( as<std::string>(value) );
+                lyr_name = as<std::string>(value);
+                lyr.set_name( lyr_name );
             } else if (key == "srs") {
                 lyr.set_srs( as<std::string>(value) );
             } else if (key == "status") {
@@ -215,6 +232,22 @@ struct mml_parser {
         }
         
         map.addLayer(lyr);
+    
+        boost::algorithm::to_lower(lyr_name);
+        boost::algorithm::replace_all(lyr_name, " ", "_");
+    
+        if (lyr_id.empty())
+            lyr_id = "#"+lyr_name;
+        if (lyr_class.empty())
+            lyr_class = "."+lyr_name;
+        
+        typedef std::pair<std::string, mapnik::layer*> pair_type;
+        
+        //layer_lookup.insert( pair_type(lyr_id,    &map.layers().back()) );
+        //layer_lookup.insert( pair_type(lyr_class, &map.layers().back()) );
+        
+        layer_lookup[lyr_id]    = map.layers().size()-1;
+        layer_lookup[lyr_class] = map.layers().size()-1;
     }
 
 
@@ -244,10 +277,18 @@ struct mml_parser {
         //} else if (file_param) {
         //    params["file"] = ensure_relative_to_xml(file_param);
         //}
+        try {
+            boost::shared_ptr<mapnik::datasource> ds = mapnik::datasource_cache::instance()->create(params);
+            lyr.set_datasource(ds);
+        } catch (std::exception& e) {
+            
+            std::stringstream err;
+            err << "Error: Datasource creation issue ("
+                << e.what() << ") at " << get_location(node).get_string(); 
 
-        boost::shared_ptr<mapnik::datasource> ds = mapnik::datasource_cache::instance()->create(params);
-        lyr.set_datasource(ds);
-
+            throw config_error(err.str());
+            
+        }
     }
     
 };

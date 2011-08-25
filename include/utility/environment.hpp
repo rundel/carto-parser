@@ -17,7 +17,7 @@ struct environment {
 
 private:
     environment const* parent;
-    typedef boost::unordered_map<std::string, utree const* > map_type;
+    typedef boost::unordered_map<std::string, utree> map_type;
     map_type definitions;
 
 public:
@@ -27,14 +27,14 @@ public:
       : parent(&parent_), 
         definitions() { }
 
-    utree const* lookup (std::string const& name) const {
+    utree lookup (std::string const& name) const {
         map_type::const_iterator it = definitions.find(name);
 
         if (it == definitions.end()) {
             if (parent)
                 return (parent->lookup(name));
 
-            return NULL;
+            return utree::nil_type();
         }
 
         return it->second; 
@@ -42,7 +42,7 @@ public:
     
     void define (std::string const& name, utree const& val) {
         //BOOST_ASSERT(!definitions.count(name));
-        definitions[name] = &val;
+        definitions[name] = val;
     }
 
     bool defined (std::string const& name) const {

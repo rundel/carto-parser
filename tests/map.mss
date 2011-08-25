@@ -91,7 +91,7 @@ Map {
     .popplaces {
         {
             text-name: "[GEONAME]";
-            text-face-name: "DejaVu Sans Book";
+            text-face-name: "DejaVu Sans Book", "DejaVu Sans Bold";
             text-size: 10;
             text-halo-fill: rgb(255, 255, 200);
             text-halo-radius: 1.0;

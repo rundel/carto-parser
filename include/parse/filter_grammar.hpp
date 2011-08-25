@@ -16,7 +16,7 @@ namespace phoenix = boost::phoenix;
 namespace ascii = boost::spirit::ascii;
 
 using boost::spirit::utree;
-using ascii::space_type;
+using boost::spirit::utf8_symbol_type;
 
 enum filter_node_type
 {
@@ -39,14 +39,16 @@ enum filter_node_type
 
 
 template<typename Iterator>
-struct filter_parser : qi::grammar< Iterator, utree(), space_type>
+struct filter_parser : qi::grammar< Iterator, utree(), ascii::space_type>
 {
     
-    qi::rule<Iterator, utree(), space_type> logical_expr, not_expr, cond_expr, 
+    qi::rule<Iterator, utree(), ascii::space_type> logical_expr, not_expr, cond_expr, 
                                             equality_expr, lhs_expr, rhs_expr, 
                                             regex_match_expr, regex_replace_expr, 
-                                            ustring, null, var_name, var_attr, var,
+                                            null, var_attr, var,
                                             attr, sq_attr; 
+    
+    qi::rule<Iterator, utf8_symbol_type()> name, var_name, ustring;
     
     utf8_string_parser<Iterator> utf8;
     //expression_parser<Iterator> expression;
@@ -104,14 +106,16 @@ struct filter_parser : qi::grammar< Iterator, utree(), space_type>
                                                    > ustring[combine(_val, _1)] > ')'
                                                    > annotate(_val, filter_replace);
         
+        
+        name = char_("a-zA-Z_") >> *char_("a-zA-Z0-9_");
         ustring = lexeme[char_("'") > *(char_-'\'') > char_("'")];
         
         null = lit("null")[_val = utree::nil_type()];
 
-        attr = lexeme[char_("a-zA-Z_") > *char_("a-zA-Z0-9_")] > annotate(_val, filter_attribute);
-        sq_attr = '[' > attr > ']';
+        attr = lexeme[name] > annotate(_val, filter_attribute);
+        sq_attr = '[' >> attr > ']';
         
-        var_name = lexeme["@" > char_("a-zA-Z_") >> *char_("a-zA-Z0-9_")];
+        var_name = lexeme["@" > name];
         var_attr = var_name > annotate(_val, filter_var_attr);
         var      = var_name > annotate(_val, filter_var);
         
