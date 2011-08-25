@@ -5,9 +5,9 @@
 
 #include <parse/parse_tree.hpp>
 #include <parse/json_grammar.hpp>
-#include <generate/generate_json.hpp>
-#include <generate/generate_json_dot.hpp>
-#include <generate/generate_mss_dot.hpp>
+//#include <generate/generate_json.hpp>
+//#include <generate/generate_json_dot.hpp>
+//#include <generate/generate_mss_dot.hpp>
 
 #include <parse/carto_grammar.hpp>
 
@@ -28,10 +28,6 @@
 int main(int argc, char **argv) {
 
     using carto::parse_tree;
-    using carto::generate_json;
-    using carto::generate_dot;
-    using carto::generate_mss_dot;
-    using boost::filesystem::path;
     
     std::string mapnik_dir = MAPNIKDIR;
     mapnik::datasource_cache::instance()->register_datasources(mapnik_dir); 
@@ -93,7 +89,8 @@ int main(int argc, char **argv) {
         else if (boost::algorithm::ends_with(input_file,".mss")) 
         {
             carto::mss_parser parser = carto::load_mss(input_file, false);
-            parser.parse_stylesheet(m);
+            carto::style_env env;
+            parser.parse_stylesheet(m, env);
         }
         
         std::string output = mapnik::save_map_to_string(m,false);

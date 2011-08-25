@@ -94,13 +94,13 @@ parse_tree build_parse_tree(std::string const& in, std::string const& path = "./
     
     parser_type p(path, pt.annotations());
     
-    iter first(in.begin()),
-         last(in.end());
+    iter it( in.begin()),
+         end(in.end());
 
-    bool r = qi::phrase_parse(first, last, p, boost::spirit::ascii::space, pt.ast());
-    if (!r)
+    bool r = qi::phrase_parse(it, end, p, boost::spirit::ascii::space, pt.ast());
+    if (!r) {
         throw config_error("Parser failed!");
-    
+    }
     return pt;
 }
 
