@@ -3,7 +3,7 @@ CXX = clang++
 
 CXXFLAGS = -g -I./include -I./agg/include $(shell mapnik-config --cflags) -DMAPNIKDIR=\"$(shell mapnik-config --input-plugins)\" -ftemplate-depth-400
 
-LIBS = $(shell mapnik-config --libs --dep-libs) $(shell pkg-config libpng --libs-only-L) -lboost_filesystem-mt -lboost_program_options-mt
+LIBS = $(shell mapnik-config --ldflags --libs --dep-libs) -lboost_program_options
 
 SRC = $(wildcard *.cpp)
 
