@@ -169,7 +169,7 @@ struct mml_parser {
         for (; it != end; ++it) {
             std::string data( as<std::string>(*it) );
             fs::path abs_path( data ),
-                             rel_path = parent_dir / abs_path;
+                rel_path = parent_dir / abs_path;
             
             if (fs::exists(abs_path)) {
                 mss_parser parser = load_mss(abs_path.string(), strict);
@@ -267,14 +267,15 @@ struct mml_parser {
             params[name] = value;
         }
 
-        //boost::optional<std::string> base_param = params.get<std::string>("base");
-        //boost::optional<std::string> file_param = params.get<std::string>("file");
-        //
-        //if (base_param) {
-        //    params["base"] = ensure_relative_to_xml(base_param);
-        //} else if (file_param) {
-        //    params["file"] = ensure_relative_to_xml(file_param);
-        //}
+        boost::optional<std::string> base_param = params.get<std::string>("base");
+        boost::optional<std::string> file_param = params.get<std::string>("file");
+        
+        if (base_param) {
+            params["base"] = ensure_relative_to_xml(base_param);
+        } else if (file_param) {
+            params["file"] = ensure_relative_to_xml(file_param);
+        }
+        
         try {
             boost::shared_ptr<mapnik::datasource> ds = mapnik::datasource_cache::instance()->create(params);
             lyr.set_datasource(ds);
@@ -289,6 +290,23 @@ struct mml_parser {
             else
                 std::clog << "### WARNING: " << err.str() << "\n";
         }
+    }
+
+    std::string ensure_relative_to_xml( boost::optional<std::string> opt_path )
+    {
+        boost::filesystem::path mml_path = boost::filesystem::path(path);
+        boost::filesystem::path rel_path = *opt_path;
+        if ( !rel_path.has_root_path() ) 
+        {
+            #if (BOOST_FILESYSTEM_VERSION == 3)
+            // TODO - normalize is now deprecated, use make_preferred?
+            boost::filesystem::path full = boost::filesystem::absolute(mml_path.parent_path()/rel_path);
+            #else // v2
+            boost::filesystem::path full = boost::filesystem::complete(mml_path.branch_path()/rel_path).normalize();
+            #endif
+            return full.string();
+        }
+        return *opt_path;
     }
     
 };
