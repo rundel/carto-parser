@@ -277,25 +277,30 @@ struct mss_parser {
         iter it  = node.begin(),
              end = node.end();
         
-        std::string out, cur_filter = mapnik::to_expression_string(rule.get_filter());
+        std::string cur_filter = mapnik::to_expression_string(rule.get_filter());
+        std::string out; 
         
         if (cur_filter != "true") {
-            out += "(" + cur_filter + ") and ";
+            out += "(" + cur_filter + ")";
         }
         
         for (; it != end; ++it) 
         {
-            if (it != node.begin())
-                out += " and ";
+            filter_printer printer(*it, tree.annotations(), env, rule);
+            std::string str = printer.print();
             
-            std::string str;
-            generate_filter(*it,tree.annotations(), env, str);
+            if (str == "")
+                continue;
+            
+            if (out != "")
+                out += " and ";
             
             out += str;
         }
         
         // FIXME
-        rule.set_filter(mapnik::parse_expression(out,"utf8"));
+        if (out != "")
+            rule.set_filter(mapnik::parse_expression(out,"utf8"));
         
         //std::string s = mapnik::to_expression_string(rule.get_filter());
     }
