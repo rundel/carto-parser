@@ -216,7 +216,11 @@ struct mss_parser {
             map_end = map.styles().end();
             
             if (map_it == map_end) {
-                map.insert_style(name, mapnik::feature_type_style());
+                
+                mapnik::feature_type_style new_style;
+                new_style.set_filter_mode(mapnik::FILTER_FIRST);
+                
+                map.insert_style(name, new_style);
                 map_it = map.styles().find(name);
             }
             style = &map_it->second;
