@@ -188,7 +188,7 @@ struct filter_printer {
             
             if (a == "[zoom]") {
                 int b = round(parse_zoom_value(*it));
-                rule.set_min_scale(zoom_ranges[b]);
+                rule.set_min_scale(zoom_ranges[b+1]);
                 rule.set_max_scale(zoom_ranges[b]);
             } else {
                 std::string b = (*this)(*it);
