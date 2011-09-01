@@ -187,6 +187,8 @@ struct mml_parser {
     void parse_layer(mapnik::Map& map, utree const& node)
     {
         mapnik::layer lyr("","");
+        // FIXME - seems to be the default from carto js
+        lyr.set_srs( "+proj=longlat +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +no_defs" );
         
         std::string lyr_name, lyr_id, lyr_class;
         
@@ -208,7 +210,8 @@ struct mml_parser {
                 lyr_name = as<std::string>(value);
                 lyr.set_name( lyr_name );
             } else if (key == "srs") {
-                lyr.set_srs( as<std::string>(value) );
+                std::string srs = as<std::string>(value);
+                if (srs != "") lyr.set_srs( srs );
             } else if (key == "status") {
                 lyr.setActive( as<bool>(value) );
             } else if (key == "title") {
