@@ -278,7 +278,7 @@ struct mml_parser {
         }
         
         try {
-            boost::shared_ptr<mapnik::datasource> ds = mapnik::datasource_cache::instance()->create(params);
+            boost::shared_ptr<mapnik::datasource> ds = mapnik::datasource_cache::instance()->create(params,false);
             lyr.set_datasource(ds);
         } catch (std::exception& e) {
             
