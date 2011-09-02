@@ -49,14 +49,14 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), ascii::space_ty
 {
 
     qi::rule<Iterator, utree(), ascii::space_type> value, element, filter, //expression, 
-                                                   ustring, var_val, expr_val,
+                                                   var_val, expr_val,
                                                    comment, attachment;
                                                    
     qi::rule<Iterator, utree::list_type(), ascii::space_type> start, variable, attribute, map_style,
                                                        style_prefix, style, name_list, element_list,
                                                        color, mixin, filter_list, expression;
     
-    qi::rule<Iterator, utf8_symbol_type()> name, style_name, var_name, enum_val;
+    qi::rule<Iterator, utf8_symbol_type()> name, style_name, var_name, enum_val, ustring;
     qi::rule<Iterator, utree::nil_type()> null;
 
     mapnik::css_color_grammar<Iterator> css_color;
@@ -130,15 +130,17 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), ascii::space_ty
                 | ( color         >> ";" )
                 | ( double_ % "," >> ";" )
                 | ( bool_         >> ";" )
-                | ( utf8 % ","    >> ";" )
+                //| ( utf8 % ","    >> ";" )
                 | ( var_val       >> ";" )
-                | ( ustring       >> ";" )
+                | ( ustring % "," >> ";" )
                 | ( expr_val      >> ";" )
                 | ( enum_val      >> ";" );
+        
+        ustring =   lexeme['\'' >> *(char_-'\'') > '\'']
+                  | lexeme['"'  >> *(char_-'"')  > '"' ];
                 
         null = "null" >> qi::attr(spirit::nil); 
         color =   css_color[_val = css_conv(qi::_1)] > annotate(_val, carto_color);
-        ustring = lexeme[char_("'") > *(char_-'\'') > char_("'")];
         enum_val = lexeme[+(char_("a-zA-Z_-"))];
         
         var_val = var_name > annotate(_val, carto_variable);
