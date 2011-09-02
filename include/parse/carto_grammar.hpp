@@ -137,11 +137,7 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), ascii::space_ty
                 | ( enum_val      >> ";" );
         
         ustring =   lexeme['\'' >> *(char_-'\'') > '\'']
-<<<<<<< HEAD
                   | lexeme['"'  >> *(char_-'"')  > '"' ];
-=======
-                  | lexeme['"'  >> *(char_-'\'') > '"' ];
->>>>>>> 127b56427768ce6ab93dbf0fdcfb681ddb5dfd84
                 
         null = "null" >> qi::attr(spirit::nil); 
         color =   css_color[_val = css_conv(qi::_1)] > annotate(_val, carto_color);
