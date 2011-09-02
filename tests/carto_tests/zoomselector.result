@@ -5,11 +5,26 @@
 
 <Style name="world" filter-mode="first">
   <Rule>
-    <PolygonSymbolizer fill="#008000" />
-    <LineSymbolizer stroke="#f0e6db" />
+    <MaxScaleDenominator>50000000</MaxScaleDenominator>
+    <MinScaleDenominator>6500000</MinScaleDenominator>
+    <MarkersSymbolizer height="2" />
+  </Rule>
+  <Rule>
+    <MaxScaleDenominator>6500000</MaxScaleDenominator>
+    <MinScaleDenominator>750000</MinScaleDenominator>
+    <MarkersSymbolizer height="3" />
+  </Rule>
+  <Rule>
+    <MinScaleDenominator>50000000</MinScaleDenominator>
+    <MarkersSymbolizer height="1" />
+  </Rule>
+  <Rule>
+    <MaxScaleDenominator>750000</MaxScaleDenominator>
+    <MarkersSymbolizer height="4" />
   </Rule>
 </Style>
-<Layer name="world"
+<Layer
+      name="world"
    srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over">
     <StyleName>world</StyleName>
     <Datasource>
