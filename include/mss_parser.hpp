@@ -194,9 +194,8 @@ struct mss_parser {
         
         for (; style_it != style_end; ++style_it) {
             
-            mapnik::feature_type_style* style;
-            mapnik::rule rule(parent_rule);
             style_env env(parent_env);
+            mapnik::rule rule(parent_rule);
             
             BOOST_ASSERT(*style_it.size() == 3);
             iter name_it  = (*style_it).begin(),
@@ -205,8 +204,6 @@ struct mss_parser {
             utree const& uname   = *name_it; name_it++;
             utree const& uattach = *name_it; name_it++;
             utree const& ufilter = *name_it;
-            
-            
             
             std::string name = parent_name + as<std::string>(uname);
             
@@ -223,23 +220,18 @@ struct mss_parser {
                 map.insert_style(name, new_style);
                 map_it = map.styles().find(name);
             }
-            style = &map_it->second;
-            
             
             if (uattach.size() != 0) {
                 name += "-"+as<std::string>(uattach);
                 
-                map.insert_style(name, mapnik::feature_type_style(*style));
+                map.insert_style(name, mapnik::feature_type_style((*map_it).second));
                 map_it = map.styles().find(name);
-                style = &map_it->second;
             }
             
             if (ufilter.size() != 0) {
                 BOOST_ASSERT(get_node_type(ufilter) == carto_filter);
                 parse_filter(map, ufilter, env, rule);
             }
-            
-            
             
             iter it  = node.back().begin(),
                  end = node.back().end();
@@ -266,9 +258,14 @@ struct mss_parser {
                 }
             }
             
-            //if (rule.get_symbolizers().size() != 0 && !(rule == parent_rule)) {
-            if (rule.get_symbolizers().size() != 0)
-                style->add_rule(rule);
+            //mapnik::rules& rules = style->get_rules_nonconst();
+            if (rule.get_symbolizers().size() != 0) {
+                //rules[pos] = rule;
+                (*map_it).second.add_rule(rule);
+            } else {
+                map.styles().erase(map_it);
+            }
+                
         }
     }
     

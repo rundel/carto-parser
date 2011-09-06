@@ -29,13 +29,14 @@
 namespace carto {
 
 using mapnik::config_error;
+namespace al = boost::algorithm;
 
 struct mml_parser {
 
     parse_tree tree;
     bool strict;
     std::string path;
-    std::map<std::string, int> layer_lookup;
+    std::vector< std::vector<std::string> > layer_selectors;
     
     mml_parser(parse_tree const& pt, bool strict_ = false, std::string const& path_ = "./")
       : tree(pt),
@@ -127,28 +128,56 @@ struct mml_parser {
             }        
         }
         
+        typedef std::pair< std::string, std::vector<std::string> > style_pair;
+        std::vector<style_pair> style_selectors;
+        
         mapnik::Map::const_style_iterator s_it  =  map.begin_styles(),
                                           s_end =  map.end_styles();
         
         for(; s_it!=s_end; ++s_it) {
-            std::string name   = (*s_it).first,
-                        prefix = (*s_it).first;
+            std::string name = (*s_it).first;
             
-            size_t loc = prefix.find(".",1);
+            al::trim_if(name,al::is_any_of(". "));
+            std::vector<std::string> selectors;
+            al::split(selectors, name, al::is_any_of(". "));
             
-            if (loc != std::string::npos)
-                prefix.replace(loc,prefix.length(),"");
+            style_selectors.push_back(style_pair((*s_it).first,selectors));
+        }
+        
+        typedef std::vector< std::vector<std::string> >::const_iterator layer_it_type;
+        layer_it_type layer_it  = layer_selectors.begin(),
+                      layer_end = layer_selectors.end();
+        
+        for(size_t i=0; layer_it != layer_end; ++layer_it, ++i) {
             
-            if (prefix != "") {
+            typedef std::vector<style_pair>::const_iterator style_it_type;
+            style_it_type style_it  = style_selectors.begin(),
+                          style_end = style_selectors.end();
+            
+            for(; style_it != style_end; ++style_it) {
+                typedef std::vector<std::string>::const_iterator selector_it_type;
+            
+                selector_it_type lselect_it  = (*layer_it).begin(),
+                                 lselect_end = (*layer_it).end(),
+                                 sselect_it  = (*style_it).second.begin(),
+                                 sselect_end = (*style_it).second.end();
                 
-                typedef std::map<std::string, int> lookup_type;
-                
-                lookup_type::const_iterator l_it  = layer_lookup.find(prefix),
-                                            l_end = layer_lookup.end();
-                if (l_it != l_end) {
-                    map.getLayer(l_it->second).add_style(name);
-                } else {
-                    
+                bool matched;
+                for(; sselect_it != sselect_end; ++sselect_it) {
+                    matched = false;
+                    for(; lselect_it != lselect_end; ++lselect_it) {
+                        if (*lselect_it == *sselect_it) {
+                            matched = true;
+                            ++lselect_it;
+                            break;
+                        }
+                    }
+                    if (!matched)
+                        break;
+                }
+            
+                if (matched) {
+                    map.getLayer(i).add_style((*style_it).first);
                 }
             }
         }
@@ -203,7 +232,7 @@ struct mml_parser {
             if (key == "id") {
                 lyr_id = "#"+as<std::string>(value);
             } else if (key == "class") {
-                lyr_class = "."+as<std::string>(value);
+                lyr_class = as<std::string>(value);
             } else if (key == "name") {
                 lyr_name = as<std::string>(value);
                 lyr.set_name( lyr_name );
@@ -231,22 +260,16 @@ struct mml_parser {
         }
         
         map.addLayer(lyr);
-    
-        boost::algorithm::to_lower(lyr_name);
-        boost::algorithm::replace_all(lyr_name, " ", "_");
-    
-        if (lyr_id.empty())
-            lyr_id = "#"+lyr_name;
-        if (lyr_class.empty())
-            lyr_class = "."+lyr_name;
         
-        typedef std::pair<std::string, mapnik::layer*> pair_type;
+        layer_selectors.push_back( std::vector<std::string>() );
+        int i = layer_selectors.size()-1;
         
-        //layer_lookup.insert( pair_type(lyr_id,    &map.layers().back()) );
-        //layer_lookup.insert( pair_type(lyr_class, &map.layers().back()) );
+        BOOST_ASSERT(layer_selectors.size() == map.layer_count());
         
-        layer_lookup[lyr_id]    = map.layers().size()-1;
-        layer_lookup[lyr_class] = map.layers().size()-1;
+        if (!lyr_id.empty())
+            layer_selectors[i].push_back(lyr_id);
+        if (!lyr_class.empty())
+            al::split(layer_selectors[i], lyr_class, al::is_any_of(". "), al::token_compress_on);
     }
 
 
