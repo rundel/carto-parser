@@ -137,6 +137,12 @@ struct mml_parser {
         for(; s_it!=s_end; ++s_it) {
             std::string name = (*s_it).first;
             
+            // remove attachment from style name
+            size_t loc = name.find("::");
+            if (loc != std::string::npos) {
+                al::erase_tail(name, name.length()-loc);
+            }
+            
             al::trim_if(name,al::is_any_of(". "));
             std::vector<std::string> selectors;
             al::split(selectors, name, al::is_any_of(". "));

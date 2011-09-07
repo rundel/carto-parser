@@ -195,7 +195,7 @@ struct mss_parser {
         for (; style_it != style_end; ++style_it) {
             
             style_env env(parent_env);
-            mapnik::rule rule(parent_rule);
+            mapnik::rule rule(parent_rule, true);
             
             BOOST_ASSERT(*style_it.size() == 3);
             iter name_it  = (*style_it).begin(),
@@ -222,9 +222,9 @@ struct mss_parser {
             }
             
             if (uattach.size() != 0) {
-                name += "-"+as<std::string>(uattach);
+                name += "::"+as<std::string>(uattach);
                 
-                map.insert_style(name, mapnik::feature_type_style((*map_it).second));
+                map.insert_style(name, mapnik::feature_type_style((*map_it).second, true));
                 map_it = map.styles().find(name);
             }
             
@@ -271,39 +271,28 @@ struct mss_parser {
     
     void parse_filter(mapnik::Map& map, utree const& node, style_env const& env, mapnik::rule& rule)
     {
-        if (node.size() == 0)
-            return;
-            
-        typedef utree::const_iterator iter;
-        iter it  = node.begin(),
-             end = node.end();
+        if (node.size() == 0) return;
         
-        std::string cur_filter = mapnik::to_expression_string(rule.get_filter());
-        std::string out; 
+        std::string cur_filter = mapnik::to_expression_string(*rule.get_filter()),
+                    out = (cur_filter != "true") ? "(" + cur_filter + ")" : "";
         
-        if (cur_filter != "true") {
-            out += "(" + cur_filter + ")";
-        }
-        
+        utree::const_iterator it  = node.begin(),
+                              end = node.end();
+                              
         for (; it != end; ++it) 
         {
             filter_printer printer(*it, tree.annotations(), env, rule);
             std::string str = printer.print();
             
-            if (str == "")
-                continue;
+            if (str.empty()) continue;
             
-            if (out != "")
-                out += " and ";
-            
-            out += str;
+            out += (!out.empty() ? " and " : "") + str;
         }
         
-        // FIXME
-        if (out != "")
-            rule.set_filter(mapnik::parse_expression(out,"utf8"));
-        
-        //std::string s = mapnik::to_expression_string(rule.get_filter());
+        if (!out.empty()) {
+            mapnik::expression_ptr expr = mapnik::parse_expression(out,"utf8");
+            rule.set_filter(expr);
+        } 
     }
     
     utree eval_var(utree const& node, style_env const& env) {
@@ -777,8 +766,12 @@ struct mss_parser {
 template<>
 mapnik::text_symbolizer mss_parser::init_symbolizer<mapnik::text_symbolizer>() 
 {
-    return mapnik::text_symbolizer(mapnik::expression_ptr(), "<no default>", 0, 
+    return mapnik::text_symbolizer(boost::make_shared<mapnik::expr_node>(true), 
+                                   "<no default>", 0, 
                                    mapnik::color(0,0,0) );
+    
+    //return mapnik::text_symbolizer(mapnik::expression_ptr(), "<no default>", 0, 
+    //                               mapnik::color(0,0,0) );
 }
 
 template<>
