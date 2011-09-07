@@ -3,13 +3,13 @@ CXX = clang++
 
 CXXFLAGS = -g -I./include -I./agg/include $(shell mapnik-config --cflags) -DMAPNIKDIR=\"$(shell mapnik-config --input-plugins)\" -ftemplate-depth-400
 
-LIBS = $(shell mapnik-config --ldflags --libs --dep-libs) -lboost_program_options
+LIBS = $(shell mapnik-config --ldflags --libs --dep-libs) -lboost_program_options-mt
 
 SRC = $(wildcard *.cpp)
 
 OBJ = $(SRC:.cpp=.o)
 
-BIN = example
+BIN = carto
 
 all : $(SRC) $(BIN)
 
