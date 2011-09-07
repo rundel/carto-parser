@@ -14,6 +14,9 @@
 
 namespace carto {
 
+namespace spirit = boost::spirit;
+using spirit::utree;
+
 struct utree_to_string {
     typedef std::string result_type;
 
