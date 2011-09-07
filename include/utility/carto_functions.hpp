@@ -56,13 +56,13 @@ struct hsl {
         }
     }
     
-    inline double hue(double h, double m1, double m2) 
+    double hue(double h, double m1, double m2) 
     {
         double tmp = h < 0 ? h + 1 : (h > 1 ? h - 1 : h);
         
-        if      (tmp * 6 < 1) return m1 + (m2 - m1) * tmp * 6;
-        else if (tmp * 2 < 1) return m2;
-        else if (tmp * 3 < 2) return m1 + (m2 - m1) * (2/3 - tmp) * 6;
+        if      (tmp < 1.0/6) return m1 + (m2 - m1) * tmp * 6.0;
+        else if (tmp < 1.0/2) return m2;
+        else if (tmp < 2.0/3) return m1 + (m2 - m1) * (2.0/3 - tmp) * 6.0;
         else                  return m1;
     }
     
@@ -72,9 +72,9 @@ struct hsl {
         double m1 = l * 2 - m2;
         
         utree ut;
-        ut.push_back( round(hue(h + 1/3,m1,m2) * 255) );
-        ut.push_back( round(hue(h      ,m1,m2) * 255) );
-        ut.push_back( round(hue(h - 1/3,m1,m1) * 255) );
+        ut.push_back( round(hue(h + 1.0/3,m1,m2) * 255) );
+        ut.push_back( round(hue(h        ,m1,m2) * 255) );
+        ut.push_back( round(hue(h - 1.0/3,m1,m2) * 255) );
         ut.push_back( round(a) );
 
         return ut;
@@ -87,7 +87,12 @@ struct hsl {
     }
 };
 
-
+utree test(utree const& rgb)
+{
+    hsl color(rgb);
+    
+    return color.to_rgb();
+}
 
 
 utree hue(utree const& rgb)
@@ -175,9 +180,9 @@ utree fadeout(utree const& rgb, utree const& value) {
 
 utree spin(utree const& rgb, utree const& value) {
     hsl color(rgb);
-    double hue = fmod(color.h + detail::as<double>(value), 360);
+    double hue = fmod(color.h*360 + detail::as<double>(value), 360);
 
-    color.h = hue < 0 ? 360 + hue : hue;
+    color.h = (hue < 0 ? 360 + hue : hue) / 360;
     
     return color.to_rgb();
 }
