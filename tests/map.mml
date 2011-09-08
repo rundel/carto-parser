@@ -9,7 +9,7 @@
             "name": "Provinces",
             "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
             "Datasource": {
-                "file": "tests/data/boundaries",
+                "file": "data/boundaries",
                 "type": "shape"
             }
         },
@@ -18,7 +18,7 @@
             "name": "Quebec Hydrography",
             "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
             "Datasource": {
-                "file": "tests/data/qcdrainage",
+                "file": "data/qcdrainage",
                 "type": "shape"
             }
         },
@@ -27,7 +27,7 @@
             "name": "Ontario Hydrography",
             "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
             "Datasource": {
-                "file": "tests/data/ontdrainage",
+                "file": "data/ontdrainage",
                 "type": "shape"
             }
         },
@@ -36,7 +36,7 @@
             "name": "Provincial borders",
             "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
             "Datasource": {
-                "file": "tests/data/boundaries_l",
+                "file": "data/boundaries_l",
                 "type": "shape"
             }
         },
@@ -45,7 +45,7 @@
             "name": "Roads",
             "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
             "Datasource": {
-                "file": "tests/data/roads",
+                "file": "data/roads",
                 "type": "shape"
             }
         },
@@ -55,7 +55,7 @@
             "srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
             "Datasource": {
                 "encoding": "latin1",
-                "file": "tests/data/popplaces",
+                "file": "data/popplaces",
                 "type": "shape"
             }
         }
