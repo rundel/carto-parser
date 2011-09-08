@@ -168,23 +168,16 @@ struct mml_parser {
                                  sselect_it  = (*style_it).second.begin(),
                                  sselect_end = (*style_it).second.end();
                 
-                bool matched;
-                for(; sselect_it != sselect_end; ++sselect_it) {
-                    matched = false;
-                    for(; lselect_it != lselect_end; ++lselect_it) {
-                        if (*lselect_it == *sselect_it) {
-                            matched = true;
-                            ++lselect_it;
-                            break;
-                        }
+                for(; lselect_it != lselect_end; ++lselect_it) {
+                    while(sselect_it != sselect_end && *lselect_it != *sselect_it) {
+                        ++sselect_it;
                     }
-                    if (!matched)
-                        break;
+                    
+                    if (sselect_it == sselect_end) break;
                 }
-            
-                if (matched) {
+                
+                if (lselect_it == lselect_end && sselect_it != sselect_end)
                     map.getLayer(i).add_style((*style_it).first);
-                }
             }
         }
     }
