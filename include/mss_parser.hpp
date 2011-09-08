@@ -263,7 +263,7 @@ struct mss_parser {
                 //rules[pos] = rule;
                 (*map_it).second.add_rule(rule);
             } else {
-                map.styles().erase(map_it);
+                //map.styles().erase(map_it);
             }
                 
         }
