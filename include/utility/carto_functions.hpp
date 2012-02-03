@@ -16,6 +16,7 @@ inline double clamp(double val) {
 struct hsl {
     
     double h,s,l,a;
+    unsigned tag;
     
     hsl(utree const& rgb)
     {
@@ -36,7 +37,9 @@ struct hsl {
         s = (max + min) / 2;
         l = (max + min) / 2;
         a = (it != end) ? as<double>(*it) : 255;
-
+        
+        tag = rgb.tag();
+        
         double d = max - min;
 
         if (max == min) {
@@ -76,7 +79,9 @@ struct hsl {
         ut.push_back( round(hue(h        ,m1,m2) * 255) );
         ut.push_back( round(hue(h - 1.0/3,m1,m2) * 255) );
         ut.push_back( round(a) );
-
+        
+        ut.tag(tag);
+        
         return ut;
     }
     
@@ -115,7 +120,7 @@ utree alpha(utree const& rgb)
     BOOST_ASSERT(rgb.size() == 3 || rgb.size() == 4);
     utree::const_iterator it = ++(++(++rgb.begin()));
     
-    return *it;
+    return utree(*it);
 }
 
 
