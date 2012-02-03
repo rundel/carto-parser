@@ -1,6 +1,8 @@
 #ifndef EXPRESSION_EVAL_H
 #define EXPRESSION_EVAL_H
 
+#include <math.h>
+
 #include <utility/utree.hpp>
 #include <utility/environment.hpp>
 #include <utility/carto_functions.hpp>
@@ -36,6 +38,18 @@ struct expression {
         return annotations[ut.tag()].first;
     }
     
+    bool is_color(utree const& ut)
+    {
+        return get_node_type(ut) == exp_color;
+    }
+    
+    bool is_double(utree const& ut)
+    {
+        return ut.which() == spirit::utree_type::double_type;
+    }
+    
+    
+    
     utree eval()
     {
         return eval_node(tree);
@@ -61,41 +75,47 @@ struct expression {
         
         //std::cout << node << " " << node.which() << " " << get_node_type(node) << "\n";
         
-        if (    node.which() == spirit::utree_type::double_type
-             || node.which() == spirit::utree_type::double_type )
+        if (node.which() == spirit::utree_type::double_type) {
             return node;
-    
-        switch(get_node_type(node)) {
-            case exp_plus:
-                BOOST_ASSERT(node.size()==2);
-                return eval_node(node.front())+eval_node(node.back());
-            case exp_minus:
-                BOOST_ASSERT(node.size()==2);
-                return eval_node(node.front())-eval_node(node.back());
-            case exp_times:
-                BOOST_ASSERT(node.size()==2);
-                return eval_node(node.front())*eval_node(node.back());
-            case exp_divide:
-                BOOST_ASSERT(node.size()==2);
-                return eval_node(node.front())/eval_node(node.back());
-            case exp_neg:
-                BOOST_ASSERT(node.size()==1);
-                return eval_node(node.front())*(-1);
-            case exp_function:
-                //std::cout << "Size: " << node.size() << "\n";
-                return eval_function(node);
-            case exp_color:
-                return node;
-            case exp_var:
-                return eval_var(node);
-            default:
-            {
-                std::stringstream out;
-                out << "Invalid expression node type: " << get_node_type(node)
-                    << " at " << get_location(node).get_string();
-                throw config_error(out.str());
+        } else if (node.which() == spirit::utree_type::list_type) {
+            switch(get_node_type(node)) {
+                case exp_plus:
+                    BOOST_ASSERT(node.size()==2);
+                    return eval_add( eval_node(node.front()), eval_node(node.back()) );
+                    //return eval_node(node.front())+eval_node(node.back());
+                case exp_minus:
+                    BOOST_ASSERT(node.size()==2);
+                    return eval_sub( eval_node(node.front()), eval_node(node.back()) );
+                case exp_times:
+                    BOOST_ASSERT(node.size()==2);
+                    return eval_mult( eval_node(node.front()), eval_node(node.back()) );
+                case exp_divide:
+                    BOOST_ASSERT(node.size()==2);
+                    return eval_div( eval_node(node.front()), eval_node(node.back()) );
+                case exp_neg:
+                    BOOST_ASSERT(node.size()==1);
+                    return eval_mult( utree(-1.0), eval_node(node.back()) );
+                case exp_function:
+                    //std::cout << "Size: " << node.size() << "\n";
+                    return eval_function(node);
+                case exp_color:
+                    BOOST_ASSERT(node.size()==4);
+                    return node;
+                case exp_var:
+                    return eval_var(node);
+                default:
+                {
+                    std::stringstream out;
+                    out << "Invalid expression node type: " << get_node_type(node)
+                        << " at " << get_location(node).get_string();
+                    throw config_error(out.str());
+                }
             }
+        } else {
+            std::cout << "Shouldn't be here!\n";
         }
+        
+        return utree();
     }
     
     utree eval_function(utree const& node)
@@ -108,7 +128,10 @@ struct expression {
         std::string func_name = as<std::string>(*it);
         ++it;
         
-        if (func_name == "hue") {
+        if (func_name == "test") {
+            utree color = eval_node(*it); ++it;
+            return test(color);
+        } else if (func_name == "hue") {
             utree color = eval_node(*it); ++it;
             return hue(color);
         } else if (func_name == "saturation") {
@@ -163,6 +186,63 @@ struct expression {
             throw config_error(err.str());
         }
     }
+    
+    utree fix_color_range(utree const& node) 
+    {
+        BOOST_ASSERT(is_color(node) == TRUE);
+        BOOST_ASSERT(node.size() == 4);
+
+        typedef utree::const_iterator iter;
+        
+        utree ut;
+        for(iter it = node.begin(); it != node.end(); it++)
+            ut.push_back( fmod(as<double>(*it), 256) );
+        
+        return ut;
+    }
+
+#define EVAL_OP(name, op)                                                            \
+    utree eval_##name(utree const& lhs, utree const& rhs)                             \
+    {                                                                                \
+        typedef utree::const_iterator iter;                                          \
+        utree ut;                                                                    \
+                                                                                     \
+        if ( is_color(lhs) && is_color(rhs) ) {                                      \
+            iter lhs_it  = lhs.begin(),                                              \
+                 rhs_it  = rhs.begin();                                              \
+                                                                                     \
+            ut.tag(lhs.tag());                                                       \
+            for(; lhs_it != lhs.end() && rhs_it != rhs.end(); lhs_it++, rhs_it++)    \
+                ut.push_back( as<double>(*lhs_it) op as<double>(*rhs_it) );          \
+                                                                                     \
+        } else if ( is_double(lhs) && is_color(rhs) ) {                              \
+            iter rhs_it  = rhs.begin();                                              \
+            double d = as<double>(lhs);                                              \
+                                                                                     \
+            ut.tag(rhs.tag());                                                       \
+            for(; rhs_it != rhs.end(); rhs_it++)                                     \
+                ut.push_back( d op as<double>(*rhs_it) );                            \
+                                                                                     \
+        } else if ( is_color(lhs) && is_double(rhs) ) {                              \
+            iter lhs_it  = lhs.begin();                                              \
+            double d = as<double>(rhs);                                              \
+                                                                                     \
+            ut.tag(lhs.tag());                                                       \
+            for(; lhs_it != lhs.end(); lhs_it++)                                     \
+                ut.push_back( d op as<double>(*lhs_it) );                            \
+                                                                                     \
+        } else {                                                                     \
+            ut = lhs op rhs;                                                         \
+        }                                                                            \
+                                                                                     \
+        return (get_node_type(ut) == exp_color) ? fix_color_range(ut) : ut;          \
+    }                                                                                \
+    /***/
+
+    EVAL_OP(add, +);
+    EVAL_OP(sub, -);
+    EVAL_OP(mult, *);
+    EVAL_OP(div, /);
 };
 
 }
