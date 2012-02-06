@@ -26,7 +26,8 @@ enum expression_node_type
     exp_neg,
     exp_function,
     exp_color,
-    exp_var
+    exp_var,
+    exp_percentage
 };
 
 struct combine_impl
@@ -87,12 +88,14 @@ struct expression_parser : qi::grammar< Iterator, utree(), ascii::space_type>
         
         function = name >> "(" > expression % "," > ")";
         
-        factor =   double_[_val = _1]
-                 | ( css_color[_val = css_conv(_1)] > annotate(_val, exp_color) )
-                 | ( var_name[_val = _1] > annotate(_val, exp_var) )
-                 | ( function[_val = _1] > annotate(_val, exp_function) )
-                 | ( "(" > expression[_val = _1] > ")" )
-                 | ( "-" > factor[_val = _1] > annotate(_val, exp_neg) );
+        factor = ( double_[_val = _1] >> "%" > annotate(_val, exp_percentage) )
+               | ( double_[_val = _1] )
+               | ( css_color[_val = css_conv(_1)] > annotate(_val, exp_color) )
+               | ( var_name[_val = _1] > annotate(_val, exp_var) )
+               | ( function[_val = _1] > annotate(_val, exp_function) )
+               | ( "(" > expression[_val = _1] > ")" )
+               | ( "-" > factor[_val = _1] > annotate(_val, exp_neg) )
+               ;
         
         BOOST_SPIRIT_DEBUG_NODE(expression);
         BOOST_SPIRIT_DEBUG_NODE(term);

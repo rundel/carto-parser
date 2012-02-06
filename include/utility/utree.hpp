@@ -9,6 +9,8 @@
 #ifndef UTREE_UTILITY_H
 #define UTREE_UTILITY_H
 
+#include <mapnik/color.hpp>
+
 #include <boost/lexical_cast.hpp>
 #include <boost/spirit/include/support_utree.hpp>
 
@@ -25,29 +27,9 @@ struct utree_to_string {
         return boost::lexical_cast<std::string>(val);
     }
     
-    std::string operator() (spirit::utf8_string_range_type const& str)
-    {
-        typedef spirit::utf8_string_range_type::const_iterator iterator;
-        iterator it = str.begin(), end = str.end();
-        
-        std::string out;
-        for (; it != end; ++it)
-            out += *it;
-        
-        return out;
-    }
+    std::string operator() (spirit::utf8_string_range_type const& str);
 
-    std::string operator() (spirit::utf8_symbol_range_type const& str)
-    {
-        typedef spirit::utf8_symbol_range_type::const_iterator iterator;
-        iterator it = str.begin(), end = str.end();
-
-        std::string out;
-        for (; it != end; ++it)
-            out += *it;
-        
-        return out;
-    }
+    std::string operator() (spirit::utf8_symbol_range_type const& str);
     
     template<typename Iterator>
     std::string operator() (boost::iterator_range<Iterator> const& range){
@@ -56,25 +38,15 @@ struct utree_to_string {
         return std::string();
     }
 
-    std::string operator() (utree::invalid_type ut){
-        return (*this)("[invalid]");
-    }
+    std::string operator() (utree::invalid_type ut);
 
-    std::string operator() (utree::nil_type ut){
-        return (*this)("[null]");
-    }
+    std::string operator() (utree::nil_type ut);
 
-    std::string operator() (spirit::binary_range_type const& str){
-        return (*this)("[binary]");
-    }
+    std::string operator() (spirit::binary_range_type const& str);
 
-    std::string operator() (spirit::any_ptr const& p){
-        return (*this)("[pointer]");
-    }
+    std::string operator() (spirit::any_ptr const& p);
 
-    std::string operator() (spirit::function_base const& pf){
-        return (*this)("[function]");
-    }
+    std::string operator() (spirit::function_base const& pf);
 };
 
 namespace detail {
@@ -90,25 +62,10 @@ namespace detail {
     }
 
     template<>
-    std::string as<std::string>(utree const& ut) 
-    {    
-        return utree::visit(ut, utree_to_string());
-    }
+    std::string as<std::string>(utree const& ut);
 
     template<>
-    mapnik::color as<mapnik::color>(utree const& ut) 
-    {    
-        BOOST_ASSERT(ut.size()==4);
-        
-        utree::const_iterator it = ut.begin();
-        
-        int r = as<int>(*it++),
-            g = as<int>(*it++),
-            b = as<int>(*it++),
-            a = as<int>(*it++);
-        
-        return mapnik::color(r,g,b,a);
-    }
+    mapnik::color as<mapnik::color>(utree const& ut);
 }
 
 }
