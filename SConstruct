@@ -60,8 +60,11 @@ env.Append(CPPPATH=[ 'include', 'agg/include' ])
 env.Append(CXXFLAGS=mapnik_cflags + [ '-DMAPNIKDIR="\\"{0}\\""'.format(pipes.quote(plugin_path)) ] + [ '-Wall', '-pedantic', '-Wfatal-errors', '-Werror', '-Wno-unused-but-set-variable', '-Wno-format' ])
 env.Append(LINKFLAGS=mapnik_ldflags + [ '-lboost_program_options' ])
 
-sources = glob.glob('src/*.cpp') + glob.glob('src/**/*.cpp')
-objects = env.Object(source=sources)
+objects = env.Object(source=[ fn for fn in glob.glob('src/*.cpp') + glob.glob('src/**/*.cpp') if fn != 'src/main.cpp' ])
 
-env.Program(target='carto', source=objects)
+env.Program(target='carto',
+            source=objects + [ 'src/main.cpp' ])
+
+env.Program(target='tools/expression_test',
+            source=env.Object(source='tools/expression_test.cpp') + objects)
 
