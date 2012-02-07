@@ -11,6 +11,8 @@
 
 #include <limits>
 
+#include <utility/utree.hpp>
+
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 
@@ -18,6 +20,8 @@
 
 namespace carto {
 
+namespace qi = boost::spirit::qi;
+using qi::raw;
 using boost::spirit::utree;
 
 struct push_annotation_impl {
@@ -29,8 +33,7 @@ struct push_annotation_impl {
     
     annotations_type& annotations;
 
-    push_annotation_impl(annotations_type& annotations_)
-      : annotations(annotations_) { }
+    push_annotation_impl(annotations_type& annotations_);
 
     template<class RangeIter>
     void operator() (utree& ast, int type, RangeIter const& rng) const {
@@ -47,7 +50,7 @@ template<class Iterator>
 struct annotator : qi::grammar<Iterator, void(utree&, int)> {
 
     qi::rule<Iterator, void(utree&, int)> start;
-    phoenix::function<push_annotation_impl> const push;
+    boost::phoenix::function<push_annotation_impl> const push;
 
     annotator (annotations_type& annotations)
       : annotator::base_type(start), 

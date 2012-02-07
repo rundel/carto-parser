@@ -41,6 +41,7 @@ enum carto_node_type
     carto_expression,
     carto_attribute,
     carto_color,
+    carto_function,
     carto_comment
 };
 

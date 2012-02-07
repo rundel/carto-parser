@@ -2,7 +2,9 @@
 #ifndef BASE_PARSER_H
 #define BASE_PARSER_H
 
+
 #include <parse/parse_tree.hpp>
+#include <utility/utree.hpp>
 
 namespace carto {
 
@@ -18,25 +20,13 @@ struct base_parser {
         return detail::as<T>(ut);
     }
     
-    parse_tree get_parse_tree()
-    {
-        return tree;
-    }
+    parse_tree get_parse_tree();
     
-    std::string get_path()
-    {
-        return path;
-    }
+    std::string get_path();
     
-    int get_node_type(utree const& ut)
-    {   
-        return( tree.annotations(ut.tag()).second );
-    }
+    int get_node_type(utree const& ut);
     
-    source_location get_location(utree const& ut)
-    {    
-        return tree.annotations()[ut.tag()].first;
-    }
+    source_location get_location(utree const& ut);
 };
 
 }

@@ -38,14 +38,14 @@ int main(int argc, char **argv) {
     
     std::string input_file, output_file;
     
-    po::options_description desc("carto2xml");
+    po::options_description desc("carto");
     desc.add_options()
         ("help,h", "produce usage message")
         ("version,V","print version string")
         ("in", po::value<std::string>(&input_file),  "input carto file (mml or mss)")
         ("out", po::value<std::string>(&output_file), "output xml file");
     
-    std::string usage("\nusage: xml2carto map.[mml|mss] [map.xml]");
+    std::string usage("\nusage: carto map.[mml|mss] [map.xml]");
     
     po::positional_options_description p;
     p.add("in",1).add("out",1);
