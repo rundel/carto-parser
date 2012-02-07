@@ -29,34 +29,15 @@ struct source_location {
     int line;
     int column;
 
-    source_location (int l, int c)
-      : line(l),
-        column(c)
-    { }
+    source_location (int l, int c);
 
-    source_location ()
-      : line(-1),
-        column(-1)
-    { }
+    source_location ();
 
-    bool valid() {
-        return (line != -1) && (column != -1);
-    }
+    bool valid();
     
-    std::string get_string() {
-        std::stringstream s;
-        
-        if (valid())
-            s << "Line: " << line << " Col: " << column;
-        else 
-            s << "Unknown Position";
+    std::string get_string();
     
-        return s.str();
-    }
-    
-    bool operator==(source_location const& other) const {
-        return other.line == line && other.column == column;
-    }
+    bool operator==(source_location const& other) const;
     
     
 };

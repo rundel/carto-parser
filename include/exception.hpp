@@ -24,45 +24,25 @@ struct exception : std::exception
 {
     std::string msg;
     
-    exception () {
-        msg = "(unknown-exception)";
-    }
+    exception ();
     
     exception (std::string const& source, source_location loc,
-               std::string const& exception)
-    { 
-        set(source, loc, exception);
-    }
+               std::string const& exception);
     
     void set (std::string const& source, source_location loc,
-              std::string const& exception)
-    {
-        msg = "Error in ";
-        
-        msg += "\"" + source + "\"";
-        
-        if (loc.valid())
-            msg += " " + loc.get_string();
-        
-        msg += " " + exception;
-    }
+              std::string const& exception);
     
-    const char* what () const throw() {
-        return msg.c_str();
-    }
+    const char* what () const throw();
     
-    ~exception () throw() { }
+    ~exception () throw();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 struct unexpected_character_data : carto::exception {
     unexpected_character_data(std::string const& source,
-                              std::string e = "unexpected-character-data")
-      : carto::exception(source, source_location(),
-                         std::string("(") + e + ")") 
-    { }
+                              std::string e = "unexpected-character-data");
    
-    ~unexpected_character_data() throw() { }
+    ~unexpected_character_data() throw();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,28 +63,14 @@ struct info_printer {
 };
 
 struct expected_component : carto::exception {
-    static std::string make(boost::spirit::info const& w, std::string const& e) {
-        std::ostringstream oss;
-        oss << "(" << e << " ";
-        
-        carto::info_printer<std::ostringstream> pr(oss);
-        
-        boost::spirit::basic_info_walker< info_printer<std::ostringstream> > walker(pr, w.tag, 0);
-        boost::apply_visitor(walker, w.value);
-        
-        oss << ")";
-        
-        return oss.str();
-    }
+    static std::string make(boost::spirit::info const& w, std::string const& e);
 
     expected_component( std::string const& source,
                         source_location loc,
                         boost::spirit::info const& w,
-                        std::string e = "expected-component")
-      : carto::exception(source, loc, make(w, e))
-    { }
+                        std::string e = "expected-component");
   
-    ~expected_component () throw() { }
+    ~expected_component () throw();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,7 +109,7 @@ struct expected : carto::exception {
       : carto::exception("", source_location(), make(expect, got, e)) 
     { }
     
-    virtual ~expected () throw() { }
+    virtual ~expected () throw();
 };
 
 }

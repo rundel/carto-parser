@@ -17,48 +17,21 @@ struct environment {
 
 private:
     environment const* parent;
-    typedef boost::unordered_map<std::string, utree> map_type;
+    typedef boost::unordered_map<std::string, boost::spirit::utree> map_type;
     map_type definitions;
 
 public:
-    environment(void): parent(), definitions() { }
+    environment(void);
 
-    environment(environment const& parent_)
-      : parent(&parent_), 
-        definitions() { }
+    environment(environment const& parent_);
 
-    utree lookup (std::string const& name) const {
-        map_type::const_iterator it = definitions.find(name);
-
-        if (it == definitions.end()) {
-            if (parent)
-                return (parent->lookup(name));
-
-            return utree::nil_type();
-        }
-
-        return it->second; 
-    }
+    boost::spirit::utree lookup (std::string const& name) const;
     
-    void define (std::string const& name, utree const& val) {
-        //BOOST_ASSERT(!definitions.count(name));
-        definitions[name] = val;
-    }
+    void define (std::string const& name, boost::spirit::utree const& val);
 
-    bool defined (std::string const& name) const {
-        if (!definitions.count(name)) {
-            if (parent)
-                return parent->defined(name);
-
-            return false;
-        }
-
-        return true; 
-    }
+    bool defined (std::string const& name) const;
     
-    bool locally_defined (std::string const& name) const {
-        return definitions.count(name); 
-    } 
+    bool locally_defined (std::string const& name) const;
 };
 
 
@@ -66,17 +39,11 @@ struct style_env {
     environment vars;
     environment mixins;
     
-    style_env() 
-      : vars(),
-        mixins() { }
+    style_env();
         
-    //style_env(environment vars_, environment mixins_)
-    //  : vars(vars_),
-    //    mixins(mixins_) { }
+    //style_env(environment vars_, environment mixins_);
         
-    style_env(style_env const& env)
-      : vars(env.vars),
-        mixins(env.mixins) { }
+    style_env(style_env const& env);
 };
 
 }
