@@ -573,10 +573,10 @@ bool mss_parser::parse_text(mapnik::Map& map, mapnik::rule& rule, std::string co
         s->set_halo_radius(as<double>(value));
     } else if (key == "text-dx") {
         double x = as<double>(value);
-        double y = s->get_displacement().get<1>();
+        double y = s->get_displacement().second;
         s->set_displacement(x,y);
     } else if (key == "text-dy") {
-        double x = s->get_displacement().get<0>();
+        double x = s->get_displacement().first;
         double y = as<double>(value);
         s->set_displacement(x,y);
     } else if (key == "text-vertical-alignment") {
@@ -630,18 +630,18 @@ bool mss_parser::parse_shield(mapnik::rule& rule, std::string const& key, utree 
         s->set_fill(as<mapnik::color>(value));
     } else if (key == "shield-text-dx") {
         double x = as<double>(value);
-        double y = s->get_displacement().get<1>();
+        double y = s->get_displacement().second;
         s->set_displacement(x,y);
     } else if (key == "shield-text-dy") {
-        double x = s->get_displacement().get<0>();
+        double x = s->get_displacement().first;
         double y = as<double>(value);
         s->set_displacement(x,y);
     } else if (key == "shield-dx") {
         double x = as<double>(value);
-        double y = s->get_shield_displacement().get<1>();
+        double y = s->get_shield_displacement().second;
         s->set_shield_displacement(x,y);
     } else if (key == "shield-dy") {
-        double x = s->get_shield_displacement().get<0>();
+        double x = s->get_shield_displacement().first;
         double y = as<double>(value);
         s->set_shield_displacement(x,y);
     } else if (key == "shield-min-distance") {
