@@ -73,7 +73,6 @@ utree expression::eval_var(utree const& node) {
 
 utree expression::eval_node(utree const& node)
 {
-    
     //std::cout << node << " " << node.which() << " " << get_node_type(node) << "\n";
     
     if (node.which() == spirit::utree_type::double_type) {
@@ -83,7 +82,6 @@ utree expression::eval_node(utree const& node)
             case exp_plus:
                 BOOST_ASSERT(node.size()==2);
                 return eval_add( eval_node(node.front()), eval_node(node.back()) );
-                //return eval_node(node.front())+eval_node(node.back());
             case exp_minus:
                 BOOST_ASSERT(node.size()==2);
                 return eval_sub( eval_node(node.front()), eval_node(node.back()) );
@@ -97,13 +95,12 @@ utree expression::eval_node(utree const& node)
                 BOOST_ASSERT(node.size()==1);
                 return eval_mult( utree(-1.0), eval_node(node.back()) );
             case exp_function:
-                //std::cout << "Size: " << node.size() << "\n";
                 return eval_function(node);
             case exp_color:
                 BOOST_ASSERT(node.size()==4);
                 return node;
-            case exp_var:
-                return eval_var(node);
+            //case exp_var:
+            //    return eval_var(node);
             default:
             {
                 std::stringstream out;
@@ -112,8 +109,14 @@ utree expression::eval_node(utree const& node)
                 throw config_error(out.str());
             }
         }
-    } else {
+    } else if (get_node_type(node) == exp_var) {
+        return eval_var(node);
+    } else {    
         std::cout << "Shouldn't be here!\n";
+        std::cout << "Node: " << node << "\n";
+        std::cout << "Node which: " << node.which() << "\n";
+        std::cout << "Node type: " << get_node_type(node) << "\n";
+        std::cout << "Node size: " << node.size() << "\n";
     }
     
     return utree();
