@@ -1,3 +1,6 @@
 .sconsign.*
 *.o
 carto
+
+tools/test
+.DS_Store
