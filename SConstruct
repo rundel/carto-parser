@@ -30,8 +30,9 @@ env = Environment(
   LINKCOMSTR='%sld: $TARGET%s' % (colors['yellow'], colors['end']),
   SHLINKCOMSTR='%sld: $TARGET%s' % (colors['yellow'], colors['end']),
 
-  tools=["default"],
-  ENV = {'PATH' : os.environ['PATH']}
+  #tools=["default"],
+  ENV = {'PATH' : os.environ['PATH'],
+         'TERM' : os.environ['TERM']}
 )
 
 # check environ
@@ -56,7 +57,7 @@ mapnik_cflags = _mapnik_config('--cflags')
 mapnik_ldflags = _mapnik_config('--libs', '--ldflags', '--dep-libs')
 (plugin_path,) = _mapnik_config('--input-plugins')
 
-env.Append(CPPPATH=[ 'include', 'agg/include' ])
+env.Append(CPPPATH=[ 'include' ])
 env.Append(CXXFLAGS=mapnik_cflags + [ '-DMAPNIKDIR="\\"{0}\\""'.format(pipes.quote(plugin_path)) ] + [ '-Wall', '-pedantic', '-Wfatal-errors', '-Werror', '-Wno-unused-but-set-variable', '-Wno-format' ])
 env.Append(LINKFLAGS=mapnik_ldflags + [ '-lboost_program_options' ])
 
