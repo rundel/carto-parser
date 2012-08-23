@@ -26,14 +26,9 @@
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/font_set.hpp>
 #include <mapnik/expression_string.hpp>
-#include <mapnik/filter_factory.hpp>
+#include <mapnik/expression.hpp>
 #include <mapnik/version.hpp>
 #include <mapnik/rule.hpp>
-
-#include <mapnik/svg/svg_parser.hpp>
-#include <mapnik/svg/svg_path_parser.hpp>
-
-#include <agg_trans_affine.h>
 
 #include <expression_eval.hpp>
 #include <generate/generate_filter.hpp>

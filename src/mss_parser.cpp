@@ -25,14 +25,12 @@
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/font_set.hpp>
 #include <mapnik/expression_string.hpp>
-#include <mapnik/filter_factory.hpp>
+#include <mapnik/expression.hpp>
 #include <mapnik/version.hpp>
 #include <mapnik/rule.hpp>
 
-#include <mapnik/svg/svg_parser.hpp>
-#include <mapnik/svg/svg_path_parser.hpp>
-
-#include <agg_trans_affine.h>
+#include <mapnik/image_scaling.hpp>
+#include <mapnik/parse_transform.hpp>
 
 #include <expression_eval.hpp>
 #include <generate/generate_filter.hpp>
@@ -121,17 +119,17 @@ void mss_parser::parse_stylesheet(mapnik::Map& map, style_env& env)
     
     for (; it != end; ++it) {
         switch((carto_node_type) get_node_type(*it)) {
-            case carto_variable:
+            case CARTO_VARIABLE:
                 parse_variable(*it,env);
                 break;
-            case carto_map_style:
+            case CARTO_MAP_STYLE:
                 parse_map_style(map, *it, env);
                 break;
-            case carto_style:
+            case CARTO_STYLE:
                 parse_style(map, *it, env);
                 break;
-            case carto_mixin:
-            case carto_comment:
+            case CARTO_MIXIN:
+            case CARTO_COMMENT:
                 break;
             default:
             {
@@ -383,30 +381,24 @@ bool mss_parser::parse_line(mapnik::rule& rule, std::string const& key, utree co
 bool mss_parser::parse_marker(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env) 
 {
     mapnik::markers_symbolizer *s = find_symbolizer<mapnik::markers_symbolizer>(rule); 
-    mapnik::stroke stroke = s->get_stroke();
+    boost::optional<mapnik::stroke> stroke = s->get_stroke();
 
     if (key == "marker-file") {
         s->set_filename(mapnik::parse_path(as<std::string>(value)));
     } else if (key == "marker-opacity") {
         s->set_opacity(as<float>(value));
-    } else if (key == "marker-line-color") {
-        stroke.set_color(as<mapnik::color>(value));
-    } else if (key == "marker-line-width") {
-        stroke.set_width(as<double>(value));
-    } else if (key == "marker-line-opacity") {
-        stroke.set_opacity(as<double>(value));
     } else if (key == "marker-placement") {
         mapnik::marker_placement_e en;
         en.from_string(as<std::string>(value));
         s->set_marker_placement(en);
-    } else if (key == "marker-type") {
-        mapnik::marker_type_e en;
-        en.from_string(as<std::string>(value));
-        s->set_marker_type(en);
+    //} else if (key == "marker-type") {
+    //    mapnik::marker_type_e en;
+    //    en.from_string(as<std::string>(value));
+    //    s->set_marker_type(en);
     } else if (key == "marker-width") {
-        s->set_width(as<double>(value));
+        s->set_width(mapnik::parse_expression(as<std::string>(value)));
     } else if (key == "marker-height") {
-        s->set_height(as<double>(value));
+        s->set_height(mapnik::parse_expression(as<std::string>(value)));
     } else if (key == "marker-fill") {
         s->set_fill(as<mapnik::color>(value));
     } else if (key == "marker-allow-overlap") {
@@ -417,9 +409,16 @@ bool mss_parser::parse_marker(mapnik::rule& rule, std::string const& key, utree 
         s->set_max_error(as<double>(value));
     } else if (key == "marker-transform") {
         s->set_transform(create_transform(as<std::string>(value)));
+    } else if (key == "marker-line-color" && stroke) {
+        (*stroke).set_color(as<mapnik::color>(value));
+    } else if (key == "marker-line-width" && stroke) {
+        (*stroke).set_width(as<double>(value));
+    } else if (key == "marker-line-opacity" && stroke) {
+        (*stroke).set_opacity(as<double>(value));
     } else {
         return false;
     }
+    
     return true;
 }
 
@@ -484,7 +483,21 @@ bool mss_parser::parse_raster(mapnik::rule& rule, std::string const& key, utree 
     } else if (key == "raster-mode") {
         s->set_mode(as<std::string>(value));
     } else if (key == "raster-scaling") {
-        s->set_scaling(as<std::string>(value));
+
+        std::string str( as<std::string>(value) );
+        boost::optional<mapnik::scaling_method_e> sm = mapnik::scaling_method_from_string(str);
+
+        if (sm){
+            s->set_scaling_method(*sm);
+        } else {
+            std::stringstream err;
+            err << "Invalid scaling method '" << str << "'";
+            if (strict)
+                throw config_error(err.str()); // value_error here?
+            else
+                std::clog << "### WARNING: " << err << std::endl;   
+        }
+
     } else {
         return false;
     }
@@ -570,14 +583,14 @@ bool mss_parser::parse_text(mapnik::Map& map, mapnik::rule& rule, std::string co
         s->set_halo_fill(as<mapnik::color>(value));
     } else if (key == "text-halo-radius") {
         s->set_halo_radius(as<double>(value));
-    } else if (key == "text-dx") {
-        double x = as<double>(value);
-        double y = s->get_displacement().second;
-        s->set_displacement(x,y);
-    } else if (key == "text-dy") {
-        double x = s->get_displacement().first;
-        double y = as<double>(value);
-        s->set_displacement(x,y);
+    //} else if (key == "text-dx") {
+    //    double x = as<double>(value);
+    //    double y = s->get_displacement().second;
+    //    s->set_displacement(x,y);
+    //} else if (key == "text-dy") {
+    //    double x = s->get_displacement().first;
+    //    double y = as<double>(value);
+    //    s->set_displacement(x,y);
     } else if (key == "text-vertical-alignment") {
         mapnik::vertical_alignment_e en;
         en.from_string(as<std::string>(value));
@@ -627,14 +640,14 @@ bool mss_parser::parse_shield(mapnik::rule& rule, std::string const& key, utree 
         s->set_line_spacing(round(as<double>(value)));
     } else if (key == "shield-fill") {
         s->set_fill(as<mapnik::color>(value));
-    } else if (key == "shield-text-dx") {
-        double x = as<double>(value);
-        double y = s->get_displacement().second;
-        s->set_displacement(x,y);
-    } else if (key == "shield-text-dy") {
-        double x = s->get_displacement().first;
-        double y = as<double>(value);
-        s->set_displacement(x,y);
+    //} else if (key == "shield-text-dx") {
+    //    double x = as<double>(value);
+    //    double y = s->get_displacement().second;
+    //    s->set_displacement(x,y);
+    //} else if (key == "shield-text-dy") {
+    //    double x = s->get_displacement().first;
+    //    double y = as<double>(value);
+    //    s->set_displacement(x,y);
     } else if (key == "shield-dx") {
         double x = as<double>(value);
         double y = s->get_shield_displacement().second;
@@ -668,7 +681,7 @@ void mss_parser::parse_map_style(mapnik::Map& map, utree const& node, style_env&
     iter it = node.begin(),
         end = node.end();
     
-    mapnik::parameters extra_attr;
+    mapnik::parameters params;
     bool relative_to_xml = true;
     
     for (; it != end; ++it) {
@@ -700,7 +713,7 @@ void mss_parser::parse_map_style(mapnik::Map& map, utree const& node, style_env&
             relative_to_xml = as<bool>(value);
         } else if (key == "minimum-version") {
             std::string ver_str = as<std::string>(value);
-            extra_attr["minimum-version"] = ver_str;
+            params["minimum-version"] = ver_str;
             
             int min_ver = version_from_string(ver_str);
             
@@ -712,14 +725,14 @@ void mss_parser::parse_map_style(mapnik::Map& map, utree const& node, style_env&
         } 
         else if (key == "font-directory") {
             std::string dir = base+as<std::string>(value);
-            extra_attr["font-directory"] = dir;
+            params["font-directory"] = dir;
             //freetype_engine::register_fonts( ensure_relative_to_xml(dir), false);
         } else {
             key_error(key,node);
         }
     }
     
-    map.set_extra_attributes(extra_attr);
+    map.set_extra_parameters(params);
 
     return;
 }

@@ -226,13 +226,13 @@ void mml_parser::parse_layer(mapnik::Map& map, utree const& node)
             std::string srs = as<std::string>(value);
             if (srs != "") lyr.set_srs( srs );
         } else if (key == "status") {
-            lyr.setActive( as<bool>(value) );
+            lyr.set_active( as<bool>(value) );
         } else if (key == "minzoom") {
-            lyr.setMinZoom( value.get<double>() );
+            lyr.set_min_zoom( value.get<double>() );
         } else if (key == "maxzoom") {
-            lyr.setMaxZoom( value.get<double>() );
+            lyr.set_max_zoom( value.get<double>() );
         } else if (key == "queryable") {
-            lyr.setQueryable( value.get<bool>() );
+        lyr.set_queryable( value.get<bool>() );
         } else if (key == "Datasource") {
             BOOST_ASSERT(get_node_type(value) == json_object);
             parse_Datasource(lyr, value.front());
@@ -289,8 +289,8 @@ void mml_parser::parse_Datasource(mapnik::layer& lyr, utree const& node)
         
         std::stringstream err;
         err << "Datasource creation issue ("
-            << e.what() << ") at " << get_location(node).get_string(); 
-
+            << e.what() << ") at " << get_location(node).get_string()
+            << " " << node;
         if (strict)
             throw config_error(err.str());
         else
