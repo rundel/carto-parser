@@ -33,7 +33,7 @@ struct expression {
     
     inline bool is_color(utree const& ut)
     {
-        return get_node_type(ut) == exp_color;
+        return get_node_type(ut) == EXP_COLOR;
     }
     
     inline bool is_double(utree const& ut)
@@ -85,7 +85,7 @@ struct expression {
             ut = lhs op rhs;                                                         \
         }                                                                            \
                                                                                      \
-        return (get_node_type(ut) == exp_color) ? fix_color_range(ut) : ut;          \
+        return (get_node_type(ut) == EXP_COLOR) ? fix_color_range(ut) : ut;          \
     }                                                                                \
     /***/
 

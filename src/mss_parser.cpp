@@ -81,21 +81,20 @@ source_location mss_parser::get_location(utree const& ut)
 
 mapnik::transform_type mss_parser::create_transform(std::string const& str)
 {
-    agg::trans_affine tr;
-    if (!mapnik::svg::parse_transform(str.c_str(),tr))
+    mapnik::transform_type trans( mapnik::parse_transform(str) );
+
+    if (!trans)
     {
         std::stringstream err;
-        err << "Could not parse transform from '" << str 
-            << "', expected string like: 'matrix(1, 0, 0, 1, 0, 0)'";
+        err << "Could not parse transform from '" << str
+            << "', expected transform attribute";
         if (strict)
             throw config_error(err.str()); // value_error here?
         else
             std::clog << "### WARNING: " << err << std::endl;         
     }
-    mapnik::transform_type matrix;
-    tr.store_to(&matrix[0]);
     
-    return matrix;
+    return trans;
 }
 
 void mss_parser::key_error(std::string const& key, utree const& node) {
@@ -193,7 +192,7 @@ void mss_parser::parse_style(mapnik::Map& map, utree const& node, style_env cons
         }
         
         if (ufilter.size() != 0) {
-            BOOST_ASSERT(get_node_type(ufilter) == carto_filter);
+            BOOST_ASSERT(get_node_type(ufilter) == CARTO_FILTER);
             parse_filter(map, ufilter, env, rule);
         }
         
@@ -202,17 +201,17 @@ void mss_parser::parse_style(mapnik::Map& map, utree const& node, style_env cons
     
         for (; it != end; ++it) {
             switch(get_node_type(*it)) {
-                case carto_variable:
+                case CARTO_VARIABLE:
                     parse_variable(*it,env);
                     break;
-                case carto_style:
+                case CARTO_STYLE:
                     parse_style(map, *it, env, rule, name);
                     break;
-                case carto_attribute:
+                case CARTO_ATTRIBUTE:
                     parse_attribute(map, *it, env, rule);                    
                     break;
-                case carto_mixin:
-                case carto_comment:
+                case CARTO_MIXIN:
+                case CARTO_COMMENT:
                     break;
                 default:
                     std::stringstream out;
@@ -271,14 +270,14 @@ utree mss_parser::eval_var(utree const& node, style_env const& env) {
         throw config_error(err.str());
     }
     
-    return (get_node_type(value) == carto_variable) ? eval_var(value,env) : value;
+    return (get_node_type(value) == CARTO_VARIABLE) ? eval_var(value,env) : value;
 }
 
 utree mss_parser::parse_value(utree const& node, style_env const& env) 
 {
-    if (get_node_type(node) == carto_variable) {
+    if (get_node_type(node) == CARTO_VARIABLE) {
         return eval_var(node, env); // vars can point at other vars
-    } else if (get_node_type(node) == carto_expression) {
+    } else if (get_node_type(node) == CARTO_EXPRESSION) {
         //BOOST_ASSERT(node.size()==1);
         expression exp(node.front().front(), tree.annotations(), env);
         return exp.eval();
@@ -676,7 +675,7 @@ void mss_parser::parse_map_style(mapnik::Map& map, utree const& node, style_env&
         
         BOOST_ASSERT((*it).size()==2);
         
-        if (get_node_type(*it) == carto_variable) {
+        if (get_node_type(*it) == CARTO_VARIABLE) {
             parse_variable(*it,env);
             break;
         }
@@ -689,7 +688,7 @@ void mss_parser::parse_map_style(mapnik::Map& map, utree const& node, style_env&
         if (key == "srs") {
             map.set_srs(as<std::string>(value));
         } else if (key == "background-color") {
-            BOOST_ASSERT((carto_node_type) get_node_type(value) == carto_color);
+            BOOST_ASSERT((carto_node_type) get_node_type(value) == CARTO_COLOR);
             map.set_background(as<mapnik::color>(value));
         } else if (key == "background-image") {
             map.set_background_image(base+as<std::string>(value));

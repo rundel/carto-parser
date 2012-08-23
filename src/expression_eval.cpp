@@ -13,25 +13,25 @@ template<expression_node_type type>
 inline utree run_op(utree const& lhs, utree const& rhs);
 
 template<>
-inline utree run_op<exp_plus>(utree const& lhs, utree const& rhs)
+inline utree run_op<EXP_PLUS>(utree const& lhs, utree const& rhs)
 {
     return lhs + rhs;
 }
 
 template<>
-inline utree run_op<exp_minus>(utree const& lhs, utree const& rhs)
+inline utree run_op<EXP_MINUS>(utree const& lhs, utree const& rhs)
 {
     return lhs - rhs;
 }
 
 template<>
-inline utree run_op<exp_times>(utree const& lhs, utree const& rhs)
+inline utree run_op<EXP_TIMES>(utree const& lhs, utree const& rhs)
 {
     return lhs * rhs;
 }
 
 template<>
-inline utree run_op<exp_divide>(utree const& lhs, utree const& rhs)
+inline utree run_op<EXP_DIVIDE>(utree const& lhs, utree const& rhs)
 {
     return lhs / rhs;
 }
@@ -68,7 +68,7 @@ utree expression::eval_var(utree const& node) {
         throw config_error(err.str());
     }
     
-    return (get_node_type(value) == carto_variable) ? eval_var(value) : value;
+    return (get_node_type(value) == CARTO_VARIABLE) ? eval_var(value) : value;
 }
 
 utree expression::eval_node(utree const& node)
@@ -79,24 +79,24 @@ utree expression::eval_node(utree const& node)
         return node;
     } else if (node.which() == spirit::utree_type::list_type) {
         switch(get_node_type(node)) {
-            case exp_plus:
+            case EXP_PLUS:
                 BOOST_ASSERT(node.size()==2);
                 return eval_add( eval_node(node.front()), eval_node(node.back()) );
-            case exp_minus:
+            case EXP_MINUS:
                 BOOST_ASSERT(node.size()==2);
                 return eval_sub( eval_node(node.front()), eval_node(node.back()) );
-            case exp_times:
+            case EXP_TIMES:
                 BOOST_ASSERT(node.size()==2);
                 return eval_mult( eval_node(node.front()), eval_node(node.back()) );
-            case exp_divide:
+            case EXP_DIVIDE:
                 BOOST_ASSERT(node.size()==2);
                 return eval_div( eval_node(node.front()), eval_node(node.back()) );
-            case exp_neg:
+            case EXP_NEG:
                 BOOST_ASSERT(node.size()==1);
                 return eval_mult( utree(-1.0), eval_node(node.back()) );
-            case exp_function:
+            case EXP_FUNCTION:
                 return eval_function(node);
-            case exp_color:
+            case EXP_COLOR:
                 BOOST_ASSERT(node.size()==4);
                 return node;
             //case exp_var:
@@ -109,7 +109,7 @@ utree expression::eval_node(utree const& node)
                 throw config_error(out.str());
             }
         }
-    } else if (get_node_type(node) == exp_var) {
+    } else if (get_node_type(node) == EXP_VAR) {
         return eval_var(node);
     } else {    
         std::cout << "Shouldn't be here!\n";

@@ -61,7 +61,8 @@ struct mss_dot_printer {
                 iterator it, end;
                 
                 int start_id = n_id;
-                
+                carto_node_type nope_type = annotations[ut.tag()].second;
+
                 /*if (annotations[ut.tag()].second == json_object) {
                     out << prefix << id << " [label=\"[object]\"];\n"; 
                     it    = ut.front().begin();
@@ -70,33 +71,33 @@ struct mss_dot_printer {
                 }*/
                 
                 out << prefix << id << " [label=\"[";
-                switch(annotations[ut.tag()].second) {
-                    case carto_undefined:
+                switch(node_type) {
+                    case CARTO_UNDEFINED:
                         out << "";
                         break;
-                    case carto_variable:
+                    case CARTO_VARIABLE:
                         out << "variable";
                         break;
-                    case carto_mixin:
-                        out << "mixin";
+                    case CARTO_MIXIN:
+                        OUT << "mixin";
                         break;
-                    case carto_style:
+                    case CARTO_STYLE:
                         out << "style";
                         break;
-                    case carto_function:
+                    case CARTO_FUNCTION:
                         out << "function";
                         break;
-                    case carto_attribute:
+                    case CARTO_ATTRIBUTE:
                         out << "attribute";
                         break;
-                    case carto_color:
+                    case CARTO_COLOR:
                         out << "color";
                         break;
-                    case carto_filter:
+                    case CARTO_FILTER:
                         out << "filter";
                         break;
                     default:
-                        std::cout << annotations[ut.tag()].second << std::endl;
+                        std::cout << node_type << std::endl;
                         BOOST_ASSERT(false);
                         //return;
                 }
@@ -106,7 +107,7 @@ struct mss_dot_printer {
                 end   = ut.end();
                 n_id += ut.size();
                 
-                if (annotations[ut.tag()].second == carto_filter) {
+                if (node_type == CARTO_FILTER) {
                     for (int i=0; it != end; ++it, ++i) {
                     
                         cur_id = start_id+i;
