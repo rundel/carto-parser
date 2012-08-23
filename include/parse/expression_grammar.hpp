@@ -56,7 +56,7 @@ struct expression_parser : qi::grammar< Iterator, utree(), ascii::space_type>
     annotator<Iterator> annotate;
     
     mapnik::css_color_grammar<Iterator> css_color;
-    phoenix::function<color_conv_impl> css_conv;
+    phoenix::function<color_conv_impl> color_conv;
     
     phoenix::function<error_handler_type> const error;
     phoenix::function<combine_impl> const combine;

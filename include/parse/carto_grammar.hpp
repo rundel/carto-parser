@@ -1,6 +1,5 @@
 /*==============================================================================
-    Copyright (c) 2010 Object Modeling Designs
-    Copyright (c) 2010 Bryce Lelbach
+    Copyright (c) 2010 Colin Rundel
 
     Distributed under the Boost Software License, Version 1.0. (See accompanying
     file BOOST_LICENSE_1_0.rst or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -61,7 +60,7 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), ascii::space_ty
     qi::rule<Iterator, utree::nil_type()> null;
 
     mapnik::css_color_grammar<Iterator> css_color;
-    phoenix::function<color_conv_impl> css_conv;
+    phoenix::function<color_conv_impl> color_conv;
 
     utf8_string_parser<Iterator> utf8;
     filter_parser<Iterator> filter_text;
