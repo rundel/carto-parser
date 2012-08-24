@@ -8,7 +8,8 @@
 #include <parse/expression_grammar.hpp>
 #include <parse/error_handler.hpp>
 #include <parse/annotator.hpp>
-#include <position_iterator.hpp>
+
+#include <mapnik/position_iterator.hpp>
 
 namespace carto {
 

@@ -9,7 +9,7 @@
 
 #include <parse/expression_grammar.hpp>
 
-#include <position_iterator.hpp>
+#include <mapnik/position_iterator.hpp>
 
 namespace carto {
 
@@ -29,7 +29,7 @@ struct expression {
     
     int get_node_type(utree const& ut);
     
-    source_location get_location(utree const& ut);
+    mapnik::source_location get_location(utree const& ut);
     
     inline bool is_color(utree const& ut)
     {

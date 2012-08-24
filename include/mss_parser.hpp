@@ -64,7 +64,7 @@ struct mss_parser {
     
     int get_node_type(utree const& ut);
     
-    source_location get_location(utree const& ut);
+    mapnik::source_location get_location(utree const& ut);
 
     template<class symbolizer>
     symbolizer* find_symbolizer(mapnik::rule& rule) 

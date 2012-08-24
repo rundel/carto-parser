@@ -69,7 +69,7 @@ double filter_printer::parse_zoom_value(utree const& ut)
         if (node_type == filter_var_attr) {
             return as<double>(parse_var(ut));
         } else {
-            source_location loc = annotations[ut.tag()].first;
+            mapnik::source_location loc = annotations[ut.tag()].first;
             
             std::stringstream out;
             out << "Invalid node type: " << node_type
@@ -187,7 +187,7 @@ std::string filter_printer::operator() (utree const& ut)
 
         if (a == "[zoom]") {
             std::string err = "Not equal is not currently supported for zoom levels (at "
-                              + get_location(ut).get_string() + ")"; 
+                              + mapnik::get_location(ut).get_string() + ")"; 
             throw config_error(err);
         } else {
             std::string b = (*this)(*it);

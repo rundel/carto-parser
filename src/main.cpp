@@ -16,13 +16,13 @@
 #include <mss_parser.hpp>
 
 #include <mapnik/save_map.hpp>
+#include <mapnik/position_iterator.hpp>
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include <boost/spirit/include/support_utree.hpp>
 #include <boost/spirit/include/qi.hpp>
-#include <position_iterator.hpp>
 
 
 int main(int argc, char **argv) {

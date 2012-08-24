@@ -10,7 +10,7 @@
 #define ERROR_HANDLER_H
 
 #include <exception.hpp>
-#include <position_iterator.hpp>
+#include <mapnik/position_iterator.hpp>
 
 namespace carto {
 
@@ -30,7 +30,7 @@ struct error_handler_impl {
       : source(source_) { }
 
     void operator()(Iterator err_pos, spirit::info const& what) const {
-        throw expected_component(source, get_location(err_pos), what);
+        throw expected_component(source, mapnik::get_location(err_pos), what);
     }
 };
 

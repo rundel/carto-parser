@@ -14,7 +14,7 @@
 #include <utility/environment.hpp>
 #include <expression_eval.hpp>
 
-#include <position_iterator.hpp>
+#include <mapnik/position_iterator.hpp>
 
 #include <iostream>
 #include <string>
@@ -41,7 +41,7 @@ int main()
         if (str.empty() || str[0] == 'q' || str[0] == 'Q')
             break;
         
-        typedef carto::position_iterator<std::string::const_iterator> iter;
+        typedef mapnik::position_iterator<std::string::const_iterator> iter;
         carto::parse_tree tree = carto::build_parse_tree< carto::expression_parser<iter> >(str);
         
         utree ut = tree.ast();

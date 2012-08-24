@@ -40,7 +40,7 @@ mml_parser::mml_parser(std::string const& in, bool strict_, std::string const& p
   : strict(strict_),
     path(path_) 
 { 
-    typedef position_iterator<std::string::const_iterator> it_type;
+    typedef mapnik::position_iterator<std::string::const_iterator> it_type;
     tree = build_parse_tree< json_parser<it_type> >(in, path);    
 }
 
@@ -59,7 +59,7 @@ node_type mml_parser::get_node_type(utree const& ut)
     return( (node_type) tree.annotations(ut.tag()).second );
 }
 
-source_location mml_parser::get_location(utree const& ut)
+mapnik::source_location mml_parser::get_location(utree const& ut)
 {    
     return tree.annotations()[ut.tag()].first;
 }
@@ -68,7 +68,7 @@ void mml_parser::key_error(std::string const& key, utree const& node) {
     
     std::stringstream err;
     err << "Unknown keyword: " << key
-        << " at " << get_location(node).get_string(); 
+        << " at " << mapnik::get_location(node).get_string(); 
     
     if (strict)
         throw config_error(err.str());
@@ -289,7 +289,7 @@ void mml_parser::parse_Datasource(mapnik::layer& lyr, utree const& node)
         
         std::stringstream err;
         err << "Datasource creation issue ("
-            << e.what() << ") at " << get_location(node).get_string()
+            << e.what() << ") at " << mapnik::get_location(node).get_string()
             << " " << node;
         if (strict)
             throw config_error(err.str());

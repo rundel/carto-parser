@@ -15,7 +15,7 @@
 #include <boost/spirit/home/support/info.hpp>
 #include <boost/spirit/include/qi.hpp>
 
-#include <position_iterator.hpp>
+#include <mapnik/position_iterator.hpp>
 
 namespace carto {
 
@@ -26,10 +26,10 @@ struct exception : std::exception
     
     exception ();
     
-    exception (std::string const& source, source_location loc,
+    exception (std::string const& source, mapnik::source_location loc,
                std::string const& exception);
     
-    void set (std::string const& source, source_location loc,
+    void set (std::string const& source, mapnik::source_location loc,
               std::string const& exception);
     
     const char* what () const throw();
@@ -66,7 +66,7 @@ struct expected_component : carto::exception {
     static std::string make(boost::spirit::info const& w, std::string const& e);
 
     expected_component( std::string const& source,
-                        source_location loc,
+                        mapnik::source_location loc,
                         boost::spirit::info const& w,
                         std::string e = "expected-component");
   
@@ -96,17 +96,17 @@ struct expected : carto::exception {
     
     template<class Got>
     expected (std::string e)
-      : carto::exception("", source_location(), std::string("(") + e + ")") 
+      : carto::exception("", mapnik::source_location(), std::string("(") + e + ")") 
     { }
     
     template<class Got>
     expected (Got const& got, std::string e)
-      : carto::exception("", source_location(), make(got, e))
+      : carto::exception("", mapnik::source_location(), make(got, e))
     { }
     
     template<class Expect, class Got>
     expected (Expect const& expect, Got const& got, std::string e)
-      : carto::exception("", source_location(), make(expect, got, e)) 
+      : carto::exception("", mapnik::source_location(), make(expect, got, e)) 
     { }
     
     virtual ~expected () throw();

@@ -46,7 +46,7 @@ int expression::get_node_type(utree const& ut)
     return( annotations[ut.tag()].second );
 }
 
-source_location expression::get_location(utree const& ut)
+mapnik::source_location expression::get_location(utree const& ut)
 {    
     return annotations[ut.tag()].first;
 }
@@ -64,7 +64,7 @@ utree expression::eval_var(utree const& node) {
     if (value == utree::nil_type()) {
         std::stringstream err;
         err << "Unknown variable: @" << key
-            << " at " << get_location(node).get_string(); 
+            << " at " << mapnik::get_location(node).get_string(); 
         throw config_error(err.str());
     }
     
@@ -105,7 +105,7 @@ utree expression::eval_node(utree const& node)
             {
                 std::stringstream out;
                 out << "Invalid expression node type: " << get_node_type(node)
-                    << " at " << get_location(node).get_string();
+                    << " at " << mapnik::get_location(node).get_string();
                 throw config_error(out.str());
             }
         }
@@ -186,7 +186,7 @@ utree expression::eval_function(utree const& node)
     } else {
         std::stringstream err;
         err << "Unknown function: " << func_name
-            << " at " << get_location(node).get_string();
+            << " at " << mapnik::get_location(node).get_string();
         throw config_error(err.str());
     }
 }

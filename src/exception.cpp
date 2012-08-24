@@ -7,7 +7,7 @@
 #include <boost/spirit/home/support/info.hpp>
 #include <boost/spirit/include/qi.hpp>
 
-#include <position_iterator.hpp>
+#include <mapnik/position_iterator.hpp>
 
 namespace carto {
 
@@ -15,13 +15,13 @@ exception::exception () {
     msg = "(unknown-exception)";
 }
     
-exception::exception (std::string const& source, source_location loc,
+exception::exception (std::string const& source, mapnik::source_location loc,
                       std::string const& exception)
 { 
     set(source, loc, exception);
 }
 
-void exception::set (std::string const& source, source_location loc,
+void exception::set (std::string const& source, mapnik::source_location loc,
                      std::string const& exception)
 {
     msg = "Error in ";
@@ -42,7 +42,7 @@ exception::~exception () throw() { }
 
 unexpected_character_data::unexpected_character_data(std::string const& source,
                                                      std::string e)
-  : carto::exception(source, source_location(),
+  : carto::exception(source, mapnik::source_location(),
                      std::string("(") + e + ")") 
 { }
 
@@ -63,7 +63,7 @@ std::string expected_component::make(boost::spirit::info const& w, std::string c
 }
 
 expected_component::expected_component( std::string const& source,
-                                        source_location loc,
+                                        mapnik::source_location loc,
                                         boost::spirit::info const& w,
                                         std::string e)
   : carto::exception(source, loc, make(w, e))
