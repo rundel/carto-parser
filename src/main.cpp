@@ -3,26 +3,15 @@
 
 //#define BOOST_SPIRIT_DEBUG
 
-#include <parse/parse_tree.hpp>
-#include <parse/json_grammar.hpp>
-//#include <generate/generate_json.hpp>
-//#include <generate/generate_json_dot.hpp>
-//#include <generate/generate_mss_dot.hpp>
-
-#include <parse/carto_grammar.hpp>
-
-
 #include <mml_parser.hpp>
 #include <mss_parser.hpp>
 
 #include <mapnik/save_map.hpp>
-#include <position_iterator.hpp>
+#include <mapnik/datasource_cache.hpp>
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include <boost/spirit/include/support_utree.hpp>
-#include <boost/spirit/include/qi.hpp>
 
 
 int main(int argc, char **argv) {

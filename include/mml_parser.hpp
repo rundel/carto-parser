@@ -8,22 +8,12 @@
 #ifndef LOAD_MML_PARSER_H
 #define LOAD_MML_PARSER_H
 
-#include <iosfwd>
-#include <sstream>
-
 #include <mapnik/map.hpp>
 #include <mapnik/layer.hpp>
-#include <mapnik/config_error.hpp>
-#include <mapnik/params.hpp>
-#include <mapnik/datasource.hpp>
-#include <mapnik/datasource_cache.hpp>
 
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+#include <boost/optional.hpp>
 
-#include <mss_parser.hpp>
 #include <parse/parse_tree.hpp>
-#include <parse/json_grammar.hpp>
 #include <utility/utree.hpp>
 
 namespace carto {
