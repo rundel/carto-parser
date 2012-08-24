@@ -54,7 +54,7 @@ struct mml_parser {
     
     node_type get_node_type(utree const& ut);
     
-    mapnik::source_location get_location(utree const& ut);
+    source_location get_location(utree const& ut);
     
     void key_error(std::string const& key, utree const& node);
     

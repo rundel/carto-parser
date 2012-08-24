@@ -9,7 +9,7 @@
 #define PARSE_TREE_H
 
 #include <mapnik/config_error.hpp>
-#include <mapnik/position_iterator.hpp>
+#include <position_iterator.hpp>
 
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/support_utree.hpp>
@@ -90,7 +90,7 @@ parse_tree build_parse_tree(std::string const& in, std::string const& path = "./
 { 
     parse_tree pt;
     
-    typedef mapnik::position_iterator<std::string::const_iterator> iter;
+    typedef position_iterator<std::string::const_iterator> iter;
     
     parser_type p(path, pt.annotations());
     

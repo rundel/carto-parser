@@ -53,7 +53,7 @@ mss_parser::mss_parser(std::string const& in, bool strict_, std::string const& p
   : strict(strict_),
     path(path_) 
 { 
-    typedef mapnik::position_iterator<std::string::const_iterator> iter;
+    typedef position_iterator<std::string::const_iterator> iter;
     tree = build_parse_tree< carto_parser<iter> >(in, path);    
 }
 
@@ -72,7 +72,7 @@ int mss_parser::get_node_type(utree const& ut)
     return( tree.annotations(ut.tag()).second );
 }
 
-mapnik::source_location mss_parser::get_location(utree const& ut)
+source_location mss_parser::get_location(utree const& ut)
 {    
     return tree.annotations()[ut.tag()].first;
 }
@@ -99,7 +99,7 @@ void mss_parser::key_error(std::string const& key, utree const& node) {
     
     std::stringstream err;
     err << "Unknown variable: @" << key
-        << " at " << mapnik::get_location(node).get_string() ; 
+        << " at " << get_location(node).get_string() ; 
     
     if (strict)
         throw config_error(err.str());
@@ -135,7 +135,7 @@ void mss_parser::parse_stylesheet(mapnik::Map& map, style_env& env)
             {
                 std::stringstream out;
                 out << "Invalid stylesheet node type: " << get_node_type(*it)
-                    << " at " << mapnik::get_location(*it).get_string();
+                    << " at " << get_location(*it).get_string();
                 throw config_error(out.str());
             }
         }
@@ -214,7 +214,7 @@ void mss_parser::parse_style(mapnik::Map& map, utree const& node, style_env cons
                 default:
                     std::stringstream out;
                     out << "Invalid style node type: " << get_node_type(*it)
-                        << " at " << mapnik::get_location(*it).get_string();
+                        << " at " << get_location(*it).get_string();
                     throw config_error(out.str());
             }
         }
@@ -264,7 +264,7 @@ utree mss_parser::eval_var(utree const& node, style_env const& env) {
     if (value == utree::nil_type()) {
         std::stringstream err;
         err << "Unknown variable: @" << key
-            << " at " << mapnik::get_location(node).get_string(); 
+            << " at " << get_location(node).get_string(); 
         throw config_error(err.str());
     }
     

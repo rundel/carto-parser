@@ -12,7 +12,7 @@
 
 #include <boost/spirit/include/phoenix.hpp>
 
-#include <mapnik/css_color_grammar.hpp>
+#include <mapnik/css_color_grammar_def.hpp>
 
 
 #include <utility/color.hpp>

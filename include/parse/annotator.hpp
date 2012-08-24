@@ -16,11 +16,11 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 
-#include <mapnik/position_iterator.hpp>
+#include <position_iterator.hpp>
 
 namespace carto {
 
-typedef std::pair<mapnik::source_location, int> annotation_type;
+typedef std::pair<source_location, int> annotation_type;
 typedef std::vector< annotation_type > annotations_type;
 
 namespace qi = boost::spirit::qi;

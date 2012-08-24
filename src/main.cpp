@@ -16,7 +16,7 @@
 #include <mss_parser.hpp>
 
 #include <mapnik/save_map.hpp>
-#include <mapnik/position_iterator.hpp>
+#include <position_iterator.hpp>
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>

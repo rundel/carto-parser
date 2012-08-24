@@ -4,7 +4,7 @@
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/spirit/include/support_utree.hpp>
 
-#include <mapnik/css_color_grammar.hpp>
+#include <mapnik/css_color_grammar_def.hpp>
 
 #include <utility/color.hpp>
 #include <parse/string_grammar.hpp>
