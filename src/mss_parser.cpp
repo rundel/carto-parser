@@ -7,11 +7,8 @@
 
 #include <mss_parser.hpp>
 
-#include <iosfwd>
-#include <fstream>
-#include <sstream>
-
 #include <boost/functional/hash.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <parse/carto_grammar.hpp>
 #include <parse/parse_tree.hpp>
@@ -75,6 +72,20 @@ int mss_parser::get_node_type(utree const& ut)
 source_location mss_parser::get_location(utree const& ut)
 {    
     return tree.annotations()[ut.tag()].first;
+}
+
+std::string const& mss_parser::get_fontset_name(std::size_t hash) 
+{
+    typedef boost::unordered_map<std::size_t, std::string> umap;
+
+    umap::const_iterator it = fontset_names.find(hash);
+
+    if (it == fontset_names.end()) {
+        fontset_names[hash] = "fontset-"+boost::lexical_cast<std::string>(fontset_names.size()-1);
+        return fontset_names[hash];
+    } else {
+        return it->second;
+    }
 }
 
 mapnik::transform_type mss_parser::create_transform(std::string const& str)
@@ -530,32 +541,25 @@ bool mss_parser::parse_text(mapnik::Map& map, mapnik::rule& rule, std::string co
         if (value.which() != utree_type::list_type) {
             s->set_face_name(as<std::string>(value));
         } else {
+            
+            mapnik::font_set fs;
+            std::size_t hash = 0;
+            
             typedef utree::const_iterator iter;
-            iter it, end;
+            iter it = value.begin(),
+                end = value.end();
             
-            it  = value.begin();
-            end = value.end();
+            for( ; it!=end; ++it) {
+                std::string str = as<std::string>(*it);
+                boost::hash_combine(hash, str);
+                fs.add_face_name(str);
+            }
             
-            std::size_t seed = 0;
-            for( ; it!=end; ++it)
-                boost::hash_combine(seed, as<std::string>(*it));
-            
-            std::stringstream ss;
-            ss << std::hex << seed;
-            
-            std::string name = ss.str();
-            
-            // FIXME - font_set does not have a/ set_name method so have to do this with two loops
-            it  = value.begin();
-            end = value.end();
-            
-            mapnik::font_set fs(name);
-            for( ; it!=end; ++it)
-                fs.add_face_name(as<std::string>(*it));
+            fs.set_name( get_fontset_name(hash) );
             
             s->set_fontset(fs);
             s->set_face_name(std::string());
-            map.insert_fontset(name, fs);
+            map.insert_fontset(fs.get_name(), fs);
         }
     } else if (key == "text-name") {
         s->set_name(mapnik::parse_expression(as<std::string>(value)));

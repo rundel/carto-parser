@@ -14,6 +14,7 @@
 #include <utility/environment.hpp>
 
 #include <boost/variant.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <mapnik/rule.hpp>
 #include <mapnik/map.hpp>
@@ -26,6 +27,9 @@ struct mss_parser {
     parse_tree tree;
     bool strict;
     std::string path;
+    boost::unordered_map<std::size_t, std::string> fontset_names;
+
+    std::string const& get_fontset_name(std::size_t hash);
     
     mss_parser(parse_tree const& pt, bool strict_ = false, std::string const& path_ = "./");
       
