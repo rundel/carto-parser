@@ -200,7 +200,7 @@ std::string filter_printer::operator() (utree const& ut)
         
         if (a == "[zoom]") {
             int b = round(parse_zoom_value(*it));
-            rule.set_min_scale(zoom_ranges[b]);
+            rule.set_min_scale(zoom_ranges[b+1]);
         } else {
             std::string b = (*this)(*it);
             out += "(" + a + " = " + b + ")";
@@ -213,7 +213,7 @@ std::string filter_printer::operator() (utree const& ut)
         
         if (a == "[zoom]") {
             int b = round(parse_zoom_value(*it));
-            rule.set_min_scale(zoom_ranges[b-1]);
+            rule.set_min_scale(zoom_ranges[b]);
         } else {
             std::string b = (*this)(*it);
             out += "(" + a + " = " + b + ")";
