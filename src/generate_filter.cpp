@@ -1,10 +1,3 @@
-/*==============================================================================
-    Copyright (c) 2010 Bryce Lelbach
-
-    Distributed under the Boost Software License, Version 1.0. (See accompanying
-    file BOOST_LICENSE_1_0.rst or copy at http://www.boost.org/LICENSE_1_0.txt)
-==============================================================================*/
-
 #include <generate/generate_filter.hpp>
 
 #include <iosfwd>
@@ -43,8 +36,8 @@ std::string filter_printer::print()
 utree filter_printer::parse_var(utree const& ut)
 {
     BOOST_ASSERT(ut.size()==1);
-    BOOST_ASSERT(    annotations[ut.tag()].second == filter_var 
-                  || annotations[ut.tag()].second == filter_var_attr);
+    BOOST_ASSERT(    annotations[ut.tag()].second == FILTER_VAR 
+                  || annotations[ut.tag()].second == FILTER_VAR_ATTR);
     
     std::string key = detail::as<std::string>(ut);
     
@@ -66,8 +59,8 @@ double filter_printer::parse_zoom_value(utree const& ut)
     if (ut.tag() != 0){
         int node_type = annotations[ut.tag()].second;
     
-        if (node_type == filter_var_attr) {
-            return as<double>(parse_var(ut));
+        if (node_type == FILTER_VAR_ATTR) {
+            return round( as<double>(parse_var(ut)) );
         } else {
             source_location loc = annotations[ut.tag()].first;
             
@@ -78,7 +71,7 @@ double filter_printer::parse_zoom_value(utree const& ut)
         }
         
     } else {
-        return as<double>(ut);
+        return round( as<double>(ut) );
     }
 }
     
@@ -106,15 +99,15 @@ std::string filter_printer::operator() (utree const& ut)
     iter it = ut.begin(),
         end = ut.end();
     
-    if (node_type == filter_var || node_type == filter_var_attr) {
+    if (node_type == FILTER_VAR || node_type == FILTER_VAR_ATTR) {
             
         utree value = parse_var(ut);
         
-        if (node_type == filter_var_attr) 
+        if (node_type == FILTER_VAR_ATTR) 
             out += "[" + (*this)(value) + "]";
         else
             out += (*this)(value);
-    } else if (node_type == filter_and) {
+    } else if (node_type == FILTER_AND) {
         BOOST_ASSERT(ut.size()==2);
         
         std::string a = (*this)(*it); it++;
@@ -125,7 +118,7 @@ std::string filter_printer::operator() (utree const& ut)
         else
             out += "(" + a + " and " + b + ")";
 
-    } else if (node_type ==  filter_or) {
+    } else if (node_type ==  FILTER_OR) {
         BOOST_ASSERT(ut.size()==2);
         
         std::string a = (*this)(*it); it++;
@@ -136,14 +129,14 @@ std::string filter_printer::operator() (utree const& ut)
         else
             out += "(" + a + " or " + b + ")";
             
-    } else if (node_type == filter_not) {
+    } else if (node_type == FILTER_NOT) {
         BOOST_ASSERT(ut.size()==1);
         
         std::string a = (*this)(*it);
         
         if (a != "")
             out += "(not " + a + ")";
-    } else if (node_type == filter_match) {
+    } else if (node_type == FILTER_MATCH) {
         BOOST_ASSERT(ut.size()==2);
         
         std::string a = (*this)(*it); it++;
@@ -151,7 +144,7 @@ std::string filter_printer::operator() (utree const& ut)
         
         out += a + ".match('" + b + "')";
         
-    } else if (node_type == filter_replace) {
+    } else if (node_type == FILTER_REPLACE) {
         BOOST_ASSERT(ut.size()==2);
         
         std::string a = (*this)(*it); it++;
@@ -160,13 +153,13 @@ std::string filter_printer::operator() (utree const& ut)
         
         out += a + ".replace('" + b + ", " + c + "')";
         
-    } else if (node_type == filter_attribute) {
+    } else if (node_type == FILTER_ATTRIBUTE) {
         //BOOST_ASSERT(ut.size()==1);
         out += "[" + (*this)(*it) + "]";
         
-    } else if (node_type == filter_expression) {
+    } else if (node_type == FILTER_EXPRESSION) {
         
-    } else if (node_type == filter_eq) {
+    } else if (node_type == FILTER_EQ) {
         BOOST_ASSERT(ut.size()==2);
         
         std::string a = (*this)(*it); it++;
@@ -180,7 +173,7 @@ std::string filter_printer::operator() (utree const& ut)
             out += "(" + a + " = " + b + ")";
         }
         
-    } else if (node_type == filter_neq) {
+    } else if (node_type == FILTER_NEQ) {
         BOOST_ASSERT(ut.size()==2);
 
         std::string a = (*this)(*it); it++;
@@ -193,7 +186,7 @@ std::string filter_printer::operator() (utree const& ut)
             std::string b = (*this)(*it);
             out += "(" + a + " = " + b + ")";
         }
-    } else if (node_type ==  filter_le) {
+    } else if (node_type ==  FILTER_LE) {
         BOOST_ASSERT(ut.size()==2);
         
         std::string a = (*this)(*it); it++;
@@ -206,7 +199,7 @@ std::string filter_printer::operator() (utree const& ut)
             out += "(" + a + " = " + b + ")";
         }
         
-    } else if (node_type ==  filter_lt) {
+    } else if (node_type ==  FILTER_LT) {
         BOOST_ASSERT(ut.size()==2);
         
         std::string a = (*this)(*it); it++;
@@ -219,7 +212,7 @@ std::string filter_printer::operator() (utree const& ut)
             out += "(" + a + " = " + b + ")";
         }
         
-    } else if (node_type ==  filter_ge) {
+    } else if (node_type ==  FILTER_GE) {
         BOOST_ASSERT(ut.size()==2);
         
         std::string a = (*this)(*it); it++;
@@ -232,7 +225,7 @@ std::string filter_printer::operator() (utree const& ut)
             out += "(" + a + " = " + b + ")";
         }
         
-    } else if (node_type == filter_gt) {
+    } else if (node_type == FILTER_GT) {
         BOOST_ASSERT(ut.size()==2);
         
         std::string a = (*this)(*it); it++;

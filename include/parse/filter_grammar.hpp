@@ -21,21 +21,21 @@ using boost::spirit::utf8_symbol_type;
 
 enum filter_node_type
 {
-    filter_and,
-    filter_or,
-    filter_not,
-    filter_eq,
-    filter_neq,
-    filter_le,
-    filter_lt,
-    filter_ge,
-    filter_gt,
-    filter_match,
-    filter_replace,
-    filter_attribute,
-    filter_expression,
-    filter_var,
-    filter_var_attr
+    FILTER_AND,
+    FILTER_OR,
+    FILTER_NOT,
+    FILTER_EQ,
+    FILTER_NEQ,
+    FILTER_LE,
+    FILTER_LT,
+    FILTER_GE,
+    FILTER_GT,
+    FILTER_MATCH,
+    FILTER_REPLACE,
+    FILTER_ATTRIBUTE,
+    FILTER_EXPRESSION,
+    FILTER_VAR,
+    FILTER_VAR_ATTR
 };
 
 
@@ -79,11 +79,11 @@ struct filter_parser : qi::grammar< Iterator, utree(), ascii::space_type>
         
 
         logical_expr = not_expr [_val = _1] 
-            >> *(   ( (lit("and") | lit("&&")) >> not_expr[combine(_val, _1)] > annotate(_val, filter_and) )
-                  | ( (lit("or")  | lit("||")) >> not_expr[combine(_val, _1)] > annotate(_val, filter_or)  )
+            >> *(   ( (lit("and") | lit("&&")) >> not_expr[combine(_val, _1)] > annotate(_val, FILTER_AND) )
+                  | ( (lit("or")  | lit("||")) >> not_expr[combine(_val, _1)] > annotate(_val, FILTER_OR)  )
                 );
 
-        not_expr =   ( (lit("not") | lit('!')) >> cond_expr[_val = _1] > annotate(_val, filter_not) )
+        not_expr =   ( (lit("not") | lit('!')) >> cond_expr[_val = _1] > annotate(_val, FILTER_NOT) )
                    | cond_expr [_val = _1 ];
 
         cond_expr =   equality_expr[_val = _1] 
@@ -91,21 +91,21 @@ struct filter_parser : qi::grammar< Iterator, utree(), ascii::space_type>
                     | ('(' > logical_expr[_val = _1] > ')');
 
         equality_expr = lhs_expr[_val = _1]
-            >> *(   ( (lit("==") | "eq" | "is" | "=") > rhs_expr[combine(_val, _1)] > annotate(_val, filter_eq) )
-                  | ( (lit("!=") | "<>" | "neq")      > rhs_expr[combine(_val, _1)] > annotate(_val, filter_neq) )
-                  | ( (lit("<=") | "le")              > rhs_expr[combine(_val, _1)] > annotate(_val, filter_le) )
-                  | ( (lit('<')  | "lt")              > rhs_expr[combine(_val, _1)] > annotate(_val, filter_lt) )
-                  | ( (lit(">=") | "ge")              > rhs_expr[combine(_val, _1)] > annotate(_val, filter_ge) )
-                  | ( (lit('>')  | "gt")              > rhs_expr[combine(_val, _1)] > annotate(_val, filter_gt) )
-                  | (                           regex_match_expr[combine(_val, _1)] > annotate(_val, filter_match) )
-                  | (                         regex_replace_expr[combine(_val, _1)] > annotate(_val, filter_replace) )
+            >> *(   ( (lit("==") | "eq" | "is" | "=") > rhs_expr[combine(_val, _1)] > annotate(_val, FILTER_EQ) )
+                  | ( (lit("!=") | "<>" | "neq")      > rhs_expr[combine(_val, _1)] > annotate(_val, FILTER_NEQ) )
+                  | ( (lit("<=") | "le")              > rhs_expr[combine(_val, _1)] > annotate(_val, FILTER_LE) )
+                  | ( (lit('<')  | "lt")              > rhs_expr[combine(_val, _1)] > annotate(_val, FILTER_LT) )
+                  | ( (lit(">=") | "ge")              > rhs_expr[combine(_val, _1)] > annotate(_val, FILTER_GE) )
+                  | ( (lit('>')  | "gt")              > rhs_expr[combine(_val, _1)] > annotate(_val, FILTER_GT) )
+                  | (                           regex_match_expr[combine(_val, _1)] > annotate(_val, FILTER_MATCH) )
+                  | (                         regex_replace_expr[combine(_val, _1)] > annotate(_val, FILTER_REPLACE) )
                 );
 
-        regex_match_expr = lit(".match") > '(' > ustring[_val = _1] > ')' > annotate(_val, filter_match);
+        regex_match_expr = lit(".match") > '(' > ustring[_val = _1] > ')' > annotate(_val, FILTER_MATCH);
 
         regex_replace_expr = lit(".replace") > '(' > ustring[_val = _1] > ',' 
                                                    > ustring[combine(_val, _1)] > ')'
-                                                   > annotate(_val, filter_replace);
+                                                   > annotate(_val, FILTER_REPLACE);
         
         
         name = char_("a-zA-Z_") >> *char_("a-zA-Z0-9_");
@@ -113,12 +113,12 @@ struct filter_parser : qi::grammar< Iterator, utree(), ascii::space_type>
         
         null = lit("null")[_val = utree::nil_type()];
 
-        attr = lexeme[name] > annotate(_val, filter_attribute);
+        attr = lexeme[name] > annotate(_val, FILTER_ATTRIBUTE);
         sq_attr = '[' >> attr > ']';
         
         var_name = lexeme["@" > name];
-        var_attr = var_name > annotate(_val, filter_var_attr);
-        var      = var_name > annotate(_val, filter_var);
+        var_attr = var_name > annotate(_val, FILTER_VAR_ATTR);
+        var      = var_name > annotate(_val, FILTER_VAR);
         
         lhs_expr =   attr
                    | sq_attr
