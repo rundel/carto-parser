@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     
     po::options_description desc("carto");
     desc.add_options()
-        ("help,h", "produce usage message")
+        ("help,h", "produce this usage message")
         ("version,V","print version string")
         ("in", po::value<std::string>(&input_file),  "input carto file (mml or mss)")
         ("out", po::value<std::string>(&output_file), "output xml file");
