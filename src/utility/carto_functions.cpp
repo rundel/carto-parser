@@ -19,7 +19,7 @@ inline double clamp(double val) {
 
 hsl::hsl(utree const& rgb)
 {
-    BOOST_ASSERT(rgb.size() == 3 || rgb.size() == 4);
+    BOOST_ASSERT(rgb.size() == 4);
 
     typedef utree::const_iterator iter;
     iter it  = rgb.begin(),
