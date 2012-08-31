@@ -9,32 +9,6 @@ namespace carto {
 using mapnik::config_error;
 using boost::spirit::utree_type;
 
-template<expression_node_type type>
-inline utree run_op(utree const& lhs, utree const& rhs);
-
-template<>
-inline utree run_op<EXP_PLUS>(utree const& lhs, utree const& rhs)
-{
-    return lhs + rhs;
-}
-
-template<>
-inline utree run_op<EXP_MINUS>(utree const& lhs, utree const& rhs)
-{
-    return lhs - rhs;
-}
-
-template<>
-inline utree run_op<EXP_TIMES>(utree const& lhs, utree const& rhs)
-{
-    return lhs * rhs;
-}
-
-template<>
-inline utree run_op<EXP_DIVIDE>(utree const& lhs, utree const& rhs)
-{
-    return lhs / rhs;
-}
 
 expression::expression(utree const& tree_, annotations_type const& annotations_, style_env const& env_)
   : tree(tree_),
