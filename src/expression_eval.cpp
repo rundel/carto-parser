@@ -9,27 +9,6 @@ namespace carto {
 using mapnik::config_error;
 using boost::spirit::utree_type;
 
-
-expression::expression(utree const& tree_, annotations_type const& annotations_, style_env const& env_)
-  : tree(tree_),
-    annotations(annotations_),
-    env(env_) { }
-
-int expression::get_node_type(utree const& ut)
-{   
-    return( annotations[ut.tag()].second );
-}
-
-source_location expression::get_location(utree const& ut)
-{    
-    return annotations[ut.tag()].first;
-}
-
-utree expression::eval()
-{
-    return eval_node(tree);
-}
-
 utree expression::eval_var(utree const& node) {
     std::string key = as<std::string>(node);
     
@@ -42,7 +21,7 @@ utree expression::eval_var(utree const& node) {
         throw config_error(err.str());
     }
     
-    return (get_node_type(value) == CARTO_VARIABLE) ? eval_var(value) : value;
+    return (get_node_type(value) == EXP_VAR) ? eval_var(value) : value;
 }
 
 utree expression::eval_node(utree const& node)
@@ -90,7 +69,8 @@ utree expression::eval_node(utree const& node)
         std::cout << "Node: " << node << "\n";
         std::cout << "Node which: " << node.which() << "\n";
         std::cout << "Node type: " << get_node_type(node) << "\n";
-        std::cout << "Node size: " << node.size() << "\n";
+        if (node.which() == spirit::utree_type::list_type)
+            std::cout << "Node size: " << node.size() << "\n";
     }
     
     return utree();
@@ -173,6 +153,7 @@ utree expression::fix_color_range(utree const& node)
     typedef utree::const_iterator iter;
     
     utree ut;
+    ut.tag(node.tag()); 
     for(iter it = node.begin(); it != node.end(); it++)
         ut.push_back( fmod(as<double>(*it), 256) );
     

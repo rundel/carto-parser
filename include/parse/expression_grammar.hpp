@@ -44,6 +44,23 @@ struct combine_impl
     }
 };
 
+struct wrap_impl
+{
+    template <typename T>
+    struct result
+    {
+        typedef spirit::utree type;
+    };
+
+    spirit::utree operator() (spirit::utree const& val) const
+    {
+        spirit::utree ut;
+        ut.push_back(val);
+
+        return ut;
+    }
+};
+
 template<typename Iterator>
 struct expression_parser : qi::grammar< Iterator, utree(), ascii::space_type>
 {
@@ -60,6 +77,7 @@ struct expression_parser : qi::grammar< Iterator, utree(), ascii::space_type>
     
     phoenix::function<error_handler_type> const error;
     phoenix::function<combine_impl> const combine;
+    phoenix::function<wrap_impl> const wrap;
     
     expression_parser (std::string const& source, annotations_type& annotations)
       : expression_parser::base_type(expression),
@@ -94,7 +112,7 @@ struct expression_parser : qi::grammar< Iterator, utree(), ascii::space_type>
                | ( var_name[_val = _1] > annotate(_val, EXP_VAR) )
                | ( function[_val = _1] > annotate(_val, EXP_FUNCTION) )
                | ( "(" > expression[_val = _1] > ")" )
-               | ( "-" > factor[_val = _1] > annotate(_val, EXP_NEG) )
+               | ( "-" > factor[_val = wrap(_1)] > annotate(_val, EXP_NEG) )
                ;
         
         BOOST_SPIRIT_DEBUG_NODE(expression);
