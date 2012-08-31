@@ -69,3 +69,5 @@ env.Program(target='carto',
 env.Program(target='tools/expression_test',
             source=env.Object(source='tools/expression_test.cpp') + objects)
 
+env.Program(target='tools/render',
+            source=env.Object(source='tools/render.cpp') + objects)
