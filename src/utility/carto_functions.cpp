@@ -116,7 +116,7 @@ utree saturate(utree const& rgb, utree const& value)
 {
     hsl color(rgb);
     
-    color.s += detail::as<double>(value) / 100;
+    color.s += as<double>(value) / 100;
     color.s = clamp(color.s);
     
     return color.to_rgb();
@@ -126,7 +126,7 @@ utree desaturate(utree const& rgb, utree const& value)
 {
     hsl color(rgb);
 
-    color.s -= detail::as<double>(value) / 100;
+    color.s -= as<double>(value) / 100;
     color.s = clamp(color.s);
     
     return color.to_rgb();
@@ -136,7 +136,7 @@ utree lighten(utree const& rgb, utree const& value)
 {
     hsl color(rgb);
 
-    color.l += detail::as<double>(value) / 100;
+    color.l += as<double>(value) / 100;
     color.l = clamp(color.l);
     
     return color.to_rgb();
@@ -146,7 +146,7 @@ utree darken(utree const& rgb, utree const& value)
 {
     hsl color(rgb);
 
-    color.l -= detail::as<double>(value) / 100;
+    color.l -= as<double>(value) / 100;
     color.l = clamp(color.l);
     
     return color.to_rgb();
@@ -156,7 +156,7 @@ utree fadein(utree const& rgb, utree const& value)
 {
     hsl color(rgb);
 
-    color.a += detail::as<double>(value) / 100;
+    color.a += as<double>(value) / 100;
     color.a = clamp(color.a);
     
     return color.to_rgb();
@@ -165,7 +165,7 @@ utree fadein(utree const& rgb, utree const& value)
 utree fadeout(utree const& rgb, utree const& value) {
     hsl color(rgb);
 
-    color.a -= detail::as<double>(value) / 100;
+    color.a -= as<double>(value) / 100;
     color.a = clamp(color.a);
     
     return color.to_rgb();
@@ -173,7 +173,7 @@ utree fadeout(utree const& rgb, utree const& value) {
 
 utree spin(utree const& rgb, utree const& value) {
     hsl color(rgb);
-    double hue = fmod(color.h*360 + detail::as<double>(value), 360);
+    double hue = fmod(color.h*360 + as<double>(value), 360);
 
     color.h = (hue < 0 ? 360 + hue : hue) / 360;
     
@@ -187,10 +187,10 @@ utree spin(utree const& rgb, utree const& value) {
 //
 utree mix(utree const& col1, utree const& col2, utree const& weight) 
 {
-    mapnik::color rgb1 = detail::as<mapnik::color>(col1);
-    mapnik::color rgb2 = detail::as<mapnik::color>(col2);
+    mapnik::color rgb1 = as<mapnik::color>(col1);
+    mapnik::color rgb2 = as<mapnik::color>(col2);
     
-    double p = detail::as<double>(weight) / 100.0;
+    double p = as<double>(weight) / 100.0;
     double w = p * 2 - 1;
     double a = rgb1.alpha() - rgb2.alpha();
 

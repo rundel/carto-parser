@@ -15,8 +15,6 @@
 #include <parse/json_grammar.hpp>
 
 #include <mapnik/map.hpp>
-#include <mapnik/config_error.hpp>
-
 #include <mapnik/color.hpp>
 #include <mapnik/color_factory.hpp>
 #include <mapnik/font_engine_freetype.hpp>
@@ -25,7 +23,6 @@
 #include <mapnik/expression.hpp>
 #include <mapnik/version.hpp>
 #include <mapnik/rule.hpp>
-
 #include <mapnik/image_scaling.hpp>
 #include <mapnik/parse_transform.hpp>
 
@@ -35,21 +32,43 @@
 #include <utility/environment.hpp>
 #include <utility/version.hpp>
 #include <utility/round.hpp>
-
+#include <utility/carto_error.hpp>
 
 namespace carto {
 
-using mapnik::config_error;
-
-mss_parser::mss_parser(parse_tree const& pt, bool strict_, std::string const& path_)
+mss_parser::mss_parser(parse_tree const& pt, std::string const& path_, bool strict_)
   : tree(pt),
     strict(strict_),
-    path(path_) { }
+    path(path_),
+    expr_grammar(mapnik::transcoder("utf8"))
+{}
   
-mss_parser::mss_parser(std::string const& in, bool strict_, std::string const& path_)
+mss_parser::mss_parser(std::string const& in, std::string const& path_, bool strict_)
   : strict(strict_),
-    path(path_) 
+    path(path_),
+    expr_grammar(mapnik::transcoder("utf8"))
 { 
+    typedef position_iterator<std::string::const_iterator> iter;
+    tree = build_parse_tree< carto_parser<iter> >(in, path);    
+}
+
+mss_parser::mss_parser(std::string const& filename, bool strict_)
+  : strict(strict_),
+    path(filename),
+    expr_grammar(mapnik::transcoder("utf8"))
+{ 
+
+    std::ifstream file(filename.c_str(), std::ios_base::in);
+
+    if (!file)
+        throw carto_error(std::string("Cannot open input file: ")+filename);
+    
+    std::string in;
+    file.unsetf(std::ios::skipws);
+    copy(std::istream_iterator<char>(file),
+         std::istream_iterator<char>(),
+         std::back_inserter(in));
+
     typedef position_iterator<std::string::const_iterator> iter;
     tree = build_parse_tree< carto_parser<iter> >(in, path);    
 }
@@ -88,19 +107,18 @@ std::string const& mss_parser::get_fontset_name(std::size_t hash)
     }
 }
 
-mapnik::transform_type mss_parser::create_transform(std::string const& str)
+mapnik::transform_type mss_parser::create_transform(std::string const& str, utree const& node)
 {
     mapnik::transform_type trans( mapnik::parse_transform(str) );
 
     if (!trans)
     {
-        std::stringstream err;
-        err << "Could not parse transform from '" << str
-            << "', expected transform attribute";
-        if (strict)
-            throw config_error(err.str()); // value_error here?
-        else
-            std::clog << "### WARNING: " << err << std::endl;         
+        std::stringstream str;
+        str << "Could not parse transform from '" << str << "', expected transform attribute";
+        
+        carto_error err(str.str(), get_location(node));
+        if (strict) throw err;   
+        else        warn(err);
     }
     
     return trans;
@@ -108,14 +126,21 @@ mapnik::transform_type mss_parser::create_transform(std::string const& str)
 
 void mss_parser::key_error(std::string const& key, utree const& node) {
     
-    std::stringstream err;
-    err << "Unknown variable: @" << key
-        << " at " << get_location(node).get_string() ; 
+    std::string str = "Unknown variable: @" + key; 
     
-    if (strict)
-        throw config_error(err.str());
-    else
-        std::clog << "### WARNING: " << err.str() << "\n";    
+    carto_error err(str, get_location(node));
+    if (strict) throw err;
+    else        warn(err);
+}
+
+void mss_parser::parse(mapnik::Map& map, style_env& env)
+{
+    try {
+        parse_stylesheet(map, env);
+    } catch(carto_error& e) {
+        e.set_filename(path);
+        throw e;
+    }
 }
 
 void mss_parser::parse_stylesheet(mapnik::Map& map, style_env& env)
@@ -145,9 +170,9 @@ void mss_parser::parse_stylesheet(mapnik::Map& map, style_env& env)
             default:
             {
                 std::stringstream out;
-                out << "Invalid stylesheet node type: " << get_node_type(*it)
-                    << " at " << get_location(*it).get_string();
-                throw config_error(out.str());
+                out << "Invalid stylesheet node type: " << get_node_type(*it);
+                
+                throw carto_error(out.str(), get_location(*it));
             }
         }
       
@@ -224,9 +249,9 @@ void mss_parser::parse_style(mapnik::Map& map, utree const& node, style_env cons
                     break;
                 default:
                     std::stringstream out;
-                    out << "Invalid style node type: " << get_node_type(*it)
-                        << " at " << get_location(*it).get_string();
-                    throw config_error(out.str());
+                    out << "Invalid style node type: " << get_node_type(*it);
+                    
+                    throw carto_error(out.str(), get_location(*it));
             }
         }
         
@@ -273,10 +298,7 @@ utree mss_parser::eval_var(utree const& node, style_env const& env) {
     utree value = env.vars.lookup(key);
     
     if (value == utree::nil_type()) {
-        std::stringstream err;
-        err << "Unknown variable: @" << key
-            << " at " << get_location(node).get_string(); 
-        throw config_error(err.str());
+        key_error(key, node);
     }
     
     return (get_node_type(value) == CARTO_VARIABLE) ? eval_var(value,env) : value;
@@ -419,7 +441,7 @@ bool mss_parser::parse_marker(mapnik::rule& rule, std::string const& key, utree 
     } else if (key == "marker-max-error") {
         s->set_max_error(as<double>(value));
     } else if (key == "marker-transform") {
-        s->set_transform(create_transform(as<std::string>(value)));
+        s->set_transform(create_transform(as<std::string>(value), value));
     } else if (key == "marker-line-color" && stroke) {
         (*stroke).set_color(as<mapnik::color>(value));
     } else if (key == "marker-line-width" && stroke) {
@@ -450,7 +472,7 @@ bool mss_parser::parse_point(mapnik::rule& rule, std::string const& key, utree c
         en.from_string(as<std::string>(value));
         s->set_point_placement(en);
     } else if (key == "point-transform") {
-        s->set_transform(create_transform(as<std::string>(value)));
+        s->set_transform(create_transform(as<std::string>(value), value));
     } else {
         return false;
     }
@@ -501,12 +523,12 @@ bool mss_parser::parse_raster(mapnik::rule& rule, std::string const& key, utree 
         if (sm){
             s->set_scaling_method(*sm);
         } else {
-            std::stringstream err;
-            err << "Invalid scaling method '" << str << "'";
-            if (strict)
-                throw config_error(err.str()); // value_error here?
-            else
-                std::clog << "### WARNING: " << err << std::endl;   
+            std::stringstream ss;
+            ss << "Invalid scaling method '" << str << "'";
+            
+            carto_error err(ss.str(), get_location(value));
+            if (strict) throw err;
+            else        warn(err);
         }
 
     } else {
@@ -722,9 +744,9 @@ void mss_parser::parse_map_style(mapnik::Map& map, utree const& node, style_env&
             int min_ver = version_from_string(ver_str);
             
             if (min_ver == -1 && strict) {
-                throw config_error(std::string("Invalid version string ") + ver_str);
+                throw carto_error(std::string("Invalid version string ") + ver_str, get_location(value));
             } else if (min_ver > MAPNIK_VERSION) {
-                throw config_error(std::string("This map uses features only present in Mapnik version ") + ver_str + " and newer");
+                throw carto_error(std::string("This map uses features only present in Mapnik version ") + ver_str + " and newer");
             }
         } 
         else if (key == "font-directory") {
@@ -769,22 +791,6 @@ template<>
 mapnik::line_pattern_symbolizer mss_parser::init_symbolizer<mapnik::line_pattern_symbolizer>() 
 {
     return mapnik::line_pattern_symbolizer(mapnik::parse_path(""));
-}
-
-mss_parser load_mss(std::string filename, bool strict)
-{
-    std::ifstream file(filename.c_str(), std::ios_base::in);
-
-    if (!file)
-        throw config_error(std::string("Cannot open input file: ")+filename);
-    
-    std::string in;
-    file.unsetf(std::ios::skipws);
-    copy(std::istream_iterator<char>(file),
-         std::istream_iterator<char>(),
-         std::back_inserter(in));
-
-    return mss_parser(in, strict, filename);
 }
 
 }

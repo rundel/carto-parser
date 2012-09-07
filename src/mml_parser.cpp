@@ -13,7 +13,6 @@
 
 #include <mapnik/map.hpp>
 #include <mapnik/layer.hpp>
-#include <mapnik/config_error.hpp>
 #include <mapnik/params.hpp>
 #include <mapnik/datasource.hpp>
 #include <mapnik/datasource_cache.hpp>
@@ -24,22 +23,44 @@
 #include <mss_parser.hpp>
 #include <parse/parse_tree.hpp>
 #include <parse/json_grammar.hpp>
+
 #include <utility/utree.hpp>
+#include <utility/carto_error.hpp>
 
 namespace carto {
 
-using mapnik::config_error;
 namespace al = boost::algorithm;
   
-mml_parser::mml_parser(parse_tree const& pt, bool strict_, std::string const& path_)
+mml_parser::mml_parser(parse_tree const& pt, std::string const& path_, bool strict_)
   : tree(pt),
     strict(strict_),
     path(path_) { }
   
-mml_parser::mml_parser(std::string const& in, bool strict_, std::string const& path_)
+mml_parser::mml_parser(std::string const& in, std::string const& path_, bool strict_)
   : strict(strict_),
     path(path_) 
 { 
+    typedef position_iterator<std::string::const_iterator> it_type;
+    tree = build_parse_tree< json_parser<it_type> >(in, path);    
+}
+
+mml_parser::mml_parser(std::string const& filename, bool strict_)
+  : strict(strict_),
+    path(filename) 
+{
+
+    std::ifstream file(filename.c_str(), std::ios_base::in);
+
+    if (!file)
+        throw carto_error(std::string("Cannot open input file: ")+filename);
+        
+    
+    std::string in;
+    file.unsetf(std::ios::skipws);
+    copy(std::istream_iterator<char>(file),
+         std::istream_iterator<char>(),
+         std::back_inserter(in));
+
     typedef position_iterator<std::string::const_iterator> it_type;
     tree = build_parse_tree< json_parser<it_type> >(in, path);    
 }
@@ -56,7 +77,7 @@ std::string mml_parser::get_path()
 
 node_type mml_parser::get_node_type(utree const& ut)
 {   
-    return( (node_type) tree.annotations(ut.tag()).second );
+    return (node_type) tree.annotations(ut.tag()).second;
 }
 
 source_location mml_parser::get_location(utree const& ut)
@@ -64,23 +85,28 @@ source_location mml_parser::get_location(utree const& ut)
     return tree.annotations()[ut.tag()].first;
 }
 
-void mml_parser::key_error(std::string const& key, utree const& node) {
+void mml_parser::key_error(std::string const& key, utree const& node)
+{    
+    carto_error err(std::string("Unknown keyword: ") + key, get_location(node));
     
-    std::stringstream err;
-    err << "Unknown keyword: " << key
-        << " at " << get_location(node).get_string(); 
-    
-    if (strict)
-        throw config_error(err.str());
-    else
-        std::clog << "### WARNING: " << err.str() << "\n";    
+    if (strict) throw err;
+    else        warn(err);
+}
+
+void mml_parser::parse(mapnik::Map& map)
+{
+    try {
+        parse_map(map);
+    } catch(carto_error& e) {
+        e.set_filename(path);
+        throw e;
+    }
 }
 
 void mml_parser::parse_map(mapnik::Map& map)
 {
     //using spirit::utree_type;
     typedef utree::const_iterator iter;
-    
     
     utree const& root_node = tree.ast();
     
@@ -187,14 +213,14 @@ void mml_parser::parse_stylesheet(mapnik::Map& map, utree const& node)
             rel_path = parent_dir / abs_path;
         
         if (fs::exists(abs_path)) {
-            mss_parser parser = load_mss(abs_path.string(), strict);
-            parser.parse_stylesheet(map, env);
+            mss_parser parser(abs_path.string(), strict);
+            parser.parse(map, env);
         } else if (fs::exists(rel_path)) {
-            mss_parser parser = load_mss(rel_path.string(), strict);
-            parser.parse_stylesheet(map, env);
+            mss_parser parser(rel_path.string(), strict);
+            parser.parse(map, env);
         } else {
-            mss_parser parser(data, strict, path);
-            parser.parse_stylesheet(map, env);
+            mss_parser parser(data, path, strict);
+            parser.parse(map, env);
         }
     }
 }
@@ -287,14 +313,12 @@ void mml_parser::parse_Datasource(mapnik::layer& lyr, utree const& node)
         lyr.set_datasource(ds);
     } catch (std::exception& e) {
         
-        std::stringstream err;
-        err << "Datasource creation issue ("
-            << e.what() << ") at " << get_location(node).get_string()
-            << " " << node;
-        if (strict)
-            throw config_error(err.str());
-        else
-            std::clog << "### WARNING: " << err.str() << "\n";
+        std::stringstream ss;
+        ss << "Datasource creation issue (" << e.what() << ")";
+        
+        carto_error err(ss.str(), get_location(node));
+        if (strict) throw err;
+        else        warn(err);
     }
 }
 
@@ -314,30 +338,6 @@ std::string mml_parser::ensure_relative_to_xml( boost::optional<std::string> opt
     }
     return *opt_path;
 }
-
-mml_parser load_mml(std::string filename, bool strict)
-{
-    std::ifstream file(filename.c_str(), std::ios_base::in);
-
-    if (!file)
-        throw config_error(std::string("Cannot open input file: ")+filename);
-        
-    
-    std::string in;
-    file.unsetf(std::ios::skipws);
-    copy(std::istream_iterator<char>(file),
-         std::istream_iterator<char>(),
-         std::back_inserter(in));
-
-    return mml_parser(in, strict, filename);
-}
-
-/*
-mml_parser load_mml_string(std::string const& in, bool strict, std::string const& base_url)
-{
-    return mml_parser(in, strict, base_url);
-}
-*/
 
 }
 

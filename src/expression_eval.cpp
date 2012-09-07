@@ -1,12 +1,11 @@
 #include <expression_eval.hpp>
 
-#include <mapnik/config_error.hpp>
+#include <utility/carto_error.hpp>
 #include <parse/annotator.hpp>
 #include <parse/carto_grammar.hpp>
 
 namespace carto {
 
-using mapnik::config_error;
 using boost::spirit::utree_type;
 
 utree expression::eval_var(utree const& node) {
@@ -14,12 +13,8 @@ utree expression::eval_var(utree const& node) {
     
     utree value = env.vars.lookup(key);
     
-    if (value == utree::nil_type()) {
-        std::stringstream err;
-        err << "Unknown variable: @" << key
-            << " at " << get_location(node).get_string(); 
-        throw config_error(err.str());
-    }
+    if (value == utree::nil_type())
+        throw carto_error("Unknown variable: @" + key, get_location(node));
     
     return (get_node_type(value) == EXP_VAR) ? eval_var(value) : value;
 }
@@ -57,9 +52,8 @@ utree expression::eval_node(utree const& node)
             default:
             {
                 std::stringstream out;
-                out << "Invalid expression node type: " << get_node_type(node)
-                    << " at " << get_location(node).get_string();
-                throw config_error(out.str());
+                out << "Invalid expression node type: " << get_node_type(node);
+                throw carto_error(out.str(), get_location(node));
             }
         }
     } else if (get_node_type(node) == EXP_VAR) {
@@ -138,10 +132,7 @@ utree expression::eval_function(utree const& node)
         utree color = eval_node(*it); ++it;
         return greyscale(color);
     } else {
-        std::stringstream err;
-        err << "Unknown function: " << func_name
-            << " at " << get_location(node).get_string();
-        throw config_error(err.str());
+        throw carto_error("Unknown function: " + func_name, get_location(node));
     }
 }
 

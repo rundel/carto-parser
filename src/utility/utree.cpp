@@ -53,7 +53,6 @@ std::string utree_to_string::operator() (spirit::function_base const& pf){
     return (*this)("[function]");
 }
 
-namespace detail {
 template<>
 std::string as<std::string>(utree const& ut) 
 {    
@@ -73,7 +72,6 @@ mapnik::color as<mapnik::color>(utree const& ut)
         a = as<int>(*it++);
     
     return mapnik::color(r,g,b,a);
-}
 }
 
 }

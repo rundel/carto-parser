@@ -13,6 +13,7 @@
 #include <utility/utree.hpp>
 #include <utility/environment.hpp>
 
+#include <boost/utility.hpp>
 #include <boost/variant.hpp>
 #include <boost/unordered_map.hpp>
 
@@ -22,31 +23,27 @@
 
 namespace carto {
 
-struct mss_parser {
+struct mss_parser : private boost::noncopyable {
 
+private:
     parse_tree tree;
     bool strict;
     std::string path;
+    
     boost::unordered_map<std::size_t, std::string> fontset_names;
+    mapnik::expression_grammar<std::string::const_iterator> expr_grammar;
+    
+public:
+    mss_parser(parse_tree const& pt, std::string const& path_, bool strict_ = false);  
+    mss_parser(std::string const& in, std::string const& path_, bool strict_ = false);
+    mss_parser(std::string const& filename, bool strict_ = false);
 
     std::string const& get_fontset_name(std::size_t hash);
     
-    mss_parser(parse_tree const& pt, bool strict_ = false, std::string const& path_ = "./");
-      
-    mss_parser(std::string const& in, bool strict_ = false, std::string const& path_ = "./");
-    
-    template<class T>
-    T as(utree const& ut)
-    {
-        return detail::as<T>(ut);
-    }
-    
     parse_tree get_parse_tree();
-    
     std::string get_path();
-    
-    int get_node_type(utree const& ut);
-    
+
+    int get_node_type(utree const& ut);    
     source_location get_location(utree const& ut);
 
     template<class symbolizer>
@@ -74,50 +71,33 @@ struct mss_parser {
         return symbolizer();
     }
 
-    mapnik::transform_type create_transform(std::string const& str);
+    mapnik::transform_type create_transform(std::string const& str, utree const& node);
     
     void key_error(std::string const& key, utree const& node);
     
+    utree eval_var(utree const& node, style_env const& env);    
+    utree parse_value(utree const& node, style_env const& env);
+    void parse_variable(utree const& node, style_env& env);
+
+    void parse(mapnik::Map& map, style_env& env);
     void parse_stylesheet(mapnik::Map& map, style_env& env);
-    
+    void parse_map_style(mapnik::Map& map, utree const& node, style_env& env);
     void parse_style(mapnik::Map& map, utree const& node, style_env const& parent_env, 
                      mapnik::rule const& parent_rule = mapnik::rule(), std::string const& parent_name = "");
-    
     void parse_filter(mapnik::Map& map, utree const& node, style_env const& env, mapnik::rule& rule);
-    
-    utree eval_var(utree const& node, style_env const& env);
-    
-    utree parse_value(utree const& node, style_env const& env);
-
     void parse_attribute(mapnik::Map& map, utree const& node, style_env const& env, mapnik::rule& rule);
     
     bool parse_polygon(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);
-    
     bool parse_line(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);
-    
     bool parse_marker(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);
-    
     bool parse_point(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);
-    
     bool parse_line_pattern(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);
-    
     bool parse_polygon_pattern(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);
-    
     bool parse_raster(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);
-    
     bool parse_building(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);
-    
     bool parse_text(mapnik::Map& map, mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);
-    
-    bool parse_shield(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);
-    
-    void parse_variable(utree const& node, style_env& env);
-    
-    void parse_map_style(mapnik::Map& map, utree const& node, style_env& env);
-    
+    bool parse_shield(mapnik::rule& rule, std::string const& key, utree const& value, style_env const& env);    
 };
-
-mss_parser load_mss(std::string filename, bool strict);
 
 }
 #endif 

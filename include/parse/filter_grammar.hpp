@@ -9,7 +9,7 @@
 #include <parse/error_handler.hpp>
 #include <parse/annotator.hpp>
 
-#include <position_iterator.hpp>
+#include <utility/position_iterator.hpp>
 
 namespace carto {
 

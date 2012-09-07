@@ -18,7 +18,6 @@
 
 namespace carto {
 
-using mapnik::config_error;
 namespace al = boost::algorithm;
 
 struct mml_parser {
@@ -28,33 +27,22 @@ struct mml_parser {
     std::string path;
     std::vector< std::vector<std::string> > layer_selectors;
     
-    mml_parser(parse_tree const& pt, bool strict_ = false, std::string const& path_ = "./");
-      
-    mml_parser(std::string const& in, bool strict_ = false, std::string const& path_ = "./");
-    
-    template<class T>
-    T as(utree const& ut)
-    {
-        return detail::as<T>(ut);
-    }
+    mml_parser(parse_tree  const& pt, std::string const& path_, bool strict_ = false);
+    mml_parser(std::string const& in, std::string const& path_, bool strict_ = false);
+    mml_parser(std::string const& filename, bool strict_ = false);
     
     parse_tree get_parse_tree();
-
     std::string get_path();
     
     node_type get_node_type(utree const& ut);
-    
     source_location get_location(utree const& ut);
     
     void key_error(std::string const& key, utree const& node);
     
+    void parse(mapnik::Map& map);
     void parse_map(mapnik::Map& map);
-    
     void parse_stylesheet(mapnik::Map& map, utree const& node);
-    
     void parse_layer(mapnik::Map& map, utree const& node);
-
-
     void parse_Datasource(mapnik::layer& lyr, utree const& node);
 
     std::string ensure_relative_to_xml( boost::optional<std::string> opt_path );

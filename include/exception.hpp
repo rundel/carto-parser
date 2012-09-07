@@ -15,7 +15,7 @@
 #include <boost/spirit/home/support/info.hpp>
 #include <boost/spirit/include/qi.hpp>
 
-#include <position_iterator.hpp>
+#include <utility/position_iterator.hpp>
 
 namespace carto {
 

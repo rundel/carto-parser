@@ -8,8 +8,8 @@
 #ifndef PARSE_TREE_H
 #define PARSE_TREE_H
 
-#include <mapnik/config_error.hpp>
-#include <position_iterator.hpp>
+#include <utility/carto_error.hpp>
+#include <utility/position_iterator.hpp>
 
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/support_utree.hpp>
@@ -21,7 +21,6 @@
 namespace carto {
 
 using boost::spirit::utree;
-using mapnik::config_error;
 
 class parse_tree {
 
@@ -98,9 +97,9 @@ parse_tree build_parse_tree(std::string const& in, std::string const& path = "./
          end(in.end());
 
     bool r = qi::phrase_parse(it, end, p, boost::spirit::ascii::space, pt.ast());
-    if (!r) {
-        throw config_error("Parser failed!");
-    }
+    if (!r)
+        throw carto_error("Parser failed!");
+    
     return pt;
 }
 

@@ -1,5 +1,8 @@
 //#define BOOST_SPIRIT_DEBUG
 
+#include <iostream>
+#include <string>
+
 #include <boost/config/warning_disable.hpp>
 #include <boost/spirit/include/support_utree.hpp>
 #include <boost/spirit/include/qi.hpp>
@@ -11,19 +14,12 @@
 #include <parse/filter_grammar.hpp>
 #include <parse/expression_grammar.hpp>
 #include <parse/parse_tree.hpp>
+
 #include <utility/environment.hpp>
+#include <utility/position_iterator.hpp>
+
 #include <expression_eval.hpp>
 
-#include <position_iterator.hpp>
-
-#include <iostream>
-#include <string>
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-//  Main program
-///////////////////////////////////////////////////////////////////////////////
 int main()
 {
 

@@ -49,24 +49,21 @@ struct utree_to_string {
     std::string operator() (spirit::function_base const& pf);
 };
 
-namespace detail {
-
-    template<class T>
-    T as(utree& ut) {
-        return ut.get<T>();
-    }
-
-    template<class T>
-    T as(utree const& ut) {
-        return ut.get<T>();
-    }
-
-    template<>
-    std::string as<std::string>(utree const& ut);
-
-    template<>
-    mapnik::color as<mapnik::color>(utree const& ut);
+template<class T>
+T as(utree& ut) {
+    return ut.get<T>();
 }
+
+template<class T>
+T as(utree const& ut) {
+    return ut.get<T>();
+}
+
+template<>
+std::string as<std::string>(utree const& ut);
+
+template<>
+mapnik::color as<mapnik::color>(utree const& ut);
 
 }
 

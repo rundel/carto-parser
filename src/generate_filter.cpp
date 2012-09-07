@@ -8,6 +8,7 @@
 
 #include <utility/environment.hpp>
 #include <utility/utree.hpp>
+#include <utility/carto_error.hpp>
 
 
 namespace carto {
@@ -39,17 +40,15 @@ utree filter_printer::parse_var(utree const& ut)
     BOOST_ASSERT(    annotations[ut.tag()].second == FILTER_VAR 
                   || annotations[ut.tag()].second == FILTER_VAR_ATTR);
     
-    std::string key = detail::as<std::string>(ut);
+    std::string key = as<std::string>(ut);
     
     //for (; it != end; ++it)
     //    key += detail::as<std::string>(*it);
         
     utree value = env.vars.lookup(key);
     
-    if (value == utree::nil_type()) {
-        std::string err = std::string("Unknown variable: @")+key; 
-        throw config_error(err);
-    }
+    if (value == utree::nil_type())
+        throw carto_error("Unknown variable: @"+key, get_location(ut));
     
     return value;
 }
@@ -62,12 +61,9 @@ double filter_printer::parse_zoom_value(utree const& ut)
         if (node_type == FILTER_VAR_ATTR) {
             return round( as<double>(parse_var(ut)) );
         } else {
-            source_location loc = annotations[ut.tag()].first;
-            
             std::stringstream out;
-            out << "Invalid node type: " << node_type
-                << " at " << loc.get_string();
-            throw config_error(out.str());
+            out << "Invalid node type: " << node_type;
+            throw carto_error(out.str(), get_location(ut));
         }
         
     } else {
@@ -179,9 +175,7 @@ std::string filter_printer::operator() (utree const& ut)
         std::string a = (*this)(*it); it++;
 
         if (a == "[zoom]") {
-            std::string err = "Not equal is not currently supported for zoom levels (at "
-                              + get_location(ut).get_string() + ")"; 
-            throw config_error(err);
+            throw carto_error("Not equal is not currently supported for zoom levels", get_location(ut));
         } else {
             std::string b = (*this)(*it);
             out += "(" + a + " = " + b + ")";

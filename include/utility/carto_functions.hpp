@@ -13,8 +13,8 @@ namespace carto {
 
 inline double clamp(double val);
 
-struct hsl {
-    
+struct hsl 
+{    
     double h,s,l,a;
     unsigned tag;
     
@@ -23,12 +23,6 @@ struct hsl {
     double hue(double h, double m1, double m2);
 
     utree to_rgb() ;
-
-    template<class T>
-    T as(utree const& ut)
-    {
-        return detail::as<T>(ut);
-    }
 };
 
 utree test(utree const& rgb);

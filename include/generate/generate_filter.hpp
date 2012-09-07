@@ -32,12 +32,6 @@ struct filter_printer {
     filter_printer(utree const& tree_, annotations_type const& annotations_, 
                    style_env const& env_, mapnik::rule& rule_);
     
-    template<class T>
-    T as(utree const& ut)
-    {
-        return detail::as<T>(ut);
-    }
-    
     std::string print();
     
     utree parse_var(utree const& ut);

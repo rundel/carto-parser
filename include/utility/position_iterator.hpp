@@ -8,35 +8,15 @@
  
 #ifndef MAPNIK_POSITION_ITERATOR_H
 #define MAPNIK_POSITION_ITERATOR_H
- 
-#include <sstream>
-#include <vector>
- 
+
 #include <boost/detail/iterator.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/range/iterator_range.hpp>
+
+#include <utility/source_location.hpp>
  
 namespace carto {
- 
-struct source_location {
- 
-    int line;
-    int column;
- 
-    source_location (int l, int c);
- 
-    source_location ();
- 
-    bool valid();
-    
-    std::string get_string();
-    
-    bool operator==(source_location const& other) const;
-    
-    
-};
- 
- 
+
 template <typename Iterator, int TabLength = 2>
 class position_iterator
   : public boost::iterator_adaptor< position_iterator<Iterator>, 
@@ -118,15 +98,16 @@ private:
     source_location loc;
     typename boost::detail::iterator_traits<Iterator>::value_type prev;
 };
- 
+
 template<class Iterator>
-inline source_location get_location (Iterator const& i) {
-    source_location loc(-1, -1);
-    return loc;
+inline source_location get_location(Iterator const& i)
+{
+    return source_location(-1, -1);
 }
  
 template<class Iterator>
-inline source_location get_location (position_iterator<Iterator> const& i) {
+inline source_location get_location(position_iterator<Iterator> const& i) 
+{
     return i.location();
 }
  

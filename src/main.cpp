@@ -72,14 +72,14 @@ int main(int argc, char **argv) {
         
         if (boost::algorithm::ends_with(input_file,".mml"))
         {
-            carto::mml_parser parser = carto::load_mml(input_file, false);
-            parser.parse_map(m);
+            carto::mml_parser parser(input_file, false);
+            parser.parse(m);
         }
         else if (boost::algorithm::ends_with(input_file,".mss")) 
         {
-            carto::mss_parser parser = carto::load_mss(input_file, false);
+            carto::mss_parser parser(input_file, false);
             carto::style_env env;
-            parser.parse_stylesheet(m, env);
+            parser.parse(m, env);
         }
         
         std::string output = mapnik::save_map_to_string(m,false);

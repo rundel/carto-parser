@@ -9,7 +9,7 @@
 
 #include <parse/expression_grammar.hpp>
 
-#include <position_iterator.hpp>
+#include <utility/position_iterator.hpp>
 
 namespace carto {
 
@@ -23,12 +23,6 @@ struct expression {
       : tree(tree_),
         annotations(annotations_),
         env(env_) { }
-    
-    template<class T>
-    T as(utree const& ut)
-    {
-        return detail::as<T>(ut);
-    }
     
     inline expression_node_type get_node_type(utree const& ut)
     {   
