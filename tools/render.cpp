@@ -76,6 +76,9 @@ int main(int argc, char **argv) {
         
         mapnik::load_map(m, input_file, TRUE);
 
+        m.zoom_all();
+        //m.zoom_to_box(mapnik::box2d<double>(-8584936.07589,4691869.09667,-8561639.82286,4720949.89071));
+
         mapnik::image_32 buf(m.width(),m.height());
         mapnik::agg_renderer<mapnik::image_32> ren(m,buf);
         ren.apply();
