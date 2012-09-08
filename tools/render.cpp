@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     try {
 
         std::string mapnik_dir = MAPNIKDIR;
-        mapnik::datasource_cache::instance()->register_datasources(mapnik_dir);
+        mapnik::datasource_cache::instance().register_datasources(mapnik_dir);
         mapnik::freetype_engine::register_fonts(mapnik_dir + "/../fonts/", TRUE);
         mapnik::freetype_engine::register_fonts("/usr/share/fonts/", TRUE);
 

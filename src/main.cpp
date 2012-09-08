@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     using carto::parse_tree;
     
     std::string mapnik_dir = MAPNIKDIR;
-    mapnik::datasource_cache::instance()->register_datasources(mapnik_dir); 
+    mapnik::datasource_cache::instance().register_datasources(mapnik_dir); 
     
     namespace po = boost::program_options;
     

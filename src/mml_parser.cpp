@@ -309,7 +309,7 @@ void mml_parser::parse_Datasource(mapnik::layer& lyr, utree const& node)
     }
     
     try {
-        boost::shared_ptr<mapnik::datasource> ds = mapnik::datasource_cache::instance()->create(params,false);
+        boost::shared_ptr<mapnik::datasource> ds = mapnik::datasource_cache::instance().create(params,false);
         lyr.set_datasource(ds);
     } catch (std::exception& e) {
         
