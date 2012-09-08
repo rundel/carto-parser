@@ -137,7 +137,18 @@ void mml_parser::parse_map(mapnik::Map& map)
                 parse_layer(map, (*lyr_it).front()) ;
             }
         } else {
-            key_error(key, *it);
+            if(get_node_type(value) != JSON_VALUE) {
+                params[key] = as<std::string>(value);
+            } else {
+                switch(value.which()) {
+                    case boost::spirit::utree_type::int_type:
+                        params[key] = as<int>(value);
+                    case boost::spirit::utree_type::double_type:
+                        params[key] = as<double>(value);
+                    default:
+                        params[key] = as<std::string>(value);
+                }
+            }
         }        
     }
     
