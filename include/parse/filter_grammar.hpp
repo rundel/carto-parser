@@ -4,7 +4,6 @@
 #include <boost/spirit/include/support_utree.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 
-#include <parse/string_grammar.hpp>
 #include <parse/expression_grammar.hpp>
 #include <parse/error_handler.hpp>
 #include <parse/annotator.hpp>
@@ -51,7 +50,6 @@ struct filter_parser : qi::grammar< Iterator, utree(), ascii::space_type>
     
     qi::rule<Iterator, utf8_symbol_type()> name, var_name, ustring;
     
-    utf8_string_parser<Iterator> utf8;
     //expression_parser<Iterator> expression;
     typedef error_handler_impl<Iterator> error_handler_type;
     phoenix::function<error_handler_type> const error;
@@ -60,7 +58,6 @@ struct filter_parser : qi::grammar< Iterator, utree(), ascii::space_type>
     
     filter_parser (std::string const& source, annotations_type& annotations)
       : filter_parser::base_type(logical_expr),
-        utf8(source),
         //expression(source,annotations),
         error(error_handler_type(source)),
         annotate(annotations)
@@ -74,10 +71,7 @@ struct filter_parser : qi::grammar< Iterator, utree(), ascii::space_type>
         using qi::lit;
         
         using boost::spirit::utf8_symbol_type;
-        qi::as<utf8_symbol_type> as_symbol;
         
-        
-
         logical_expr = not_expr [_val = _1] 
             >> *(   ( (lit("and") | lit("&&")) >> not_expr[combine(_val, _1)] > annotate(_val, FILTER_AND) )
                   | ( (lit("or")  | lit("||")) >> not_expr[combine(_val, _1)] > annotate(_val, FILTER_OR)  )

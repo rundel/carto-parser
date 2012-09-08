@@ -110,7 +110,7 @@ void mml_parser::parse_map(mapnik::Map& map)
     
     utree const& root_node = tree.ast();
     
-    BOOST_ASSERT(get_node_type(root_node) == json_object);
+    BOOST_ASSERT(get_node_type(root_node) == JSON_OBJECT);
     
     iter it = root_node.front().begin(),
         end = root_node.front().end();
@@ -260,7 +260,7 @@ void mml_parser::parse_layer(mapnik::Map& map, utree const& node)
         } else if (key == "queryable") {
         lyr.set_queryable( value.get<bool>() );
         } else if (key == "Datasource") {
-            BOOST_ASSERT(get_node_type(value) == json_object);
+            BOOST_ASSERT(get_node_type(value) == JSON_OBJECT);
             parse_Datasource(lyr, value.front());
         } else {
             key_error(key, *it);

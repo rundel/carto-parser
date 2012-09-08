@@ -24,9 +24,9 @@ struct expression {
         annotations(annotations_),
         env(env_) { }
     
-    inline expression_node_type get_node_type(utree const& ut)
+    inline int get_node_type(utree const& ut)
     {   
-        return (expression_node_type) annotations[ut.tag()].second;
+        return annotations[ut.tag()].second;
     }
 
     inline source_location get_location(utree const& ut)
@@ -36,7 +36,7 @@ struct expression {
 
     inline bool is_color(utree const& ut)
     {
-        return get_node_type(ut) == EXP_COLOR;
+        return get_node_type(ut) == CARTO_EXP_COLOR;
     }
     
     inline bool is_double(utree const& ut)

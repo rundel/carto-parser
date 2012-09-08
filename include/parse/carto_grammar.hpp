@@ -16,11 +16,11 @@
 
 
 #include <utility/color.hpp>
-#include <parse/string_grammar.hpp>
 #include <parse/filter_grammar.hpp>
 #include <parse/expression_grammar.hpp>
 #include <parse/error_handler.hpp>
 #include <parse/annotator.hpp>
+#include <parse/node_types.hpp>
 
 namespace carto {
 
@@ -28,21 +28,6 @@ namespace phoenix = boost::phoenix;
 namespace ascii = boost::spirit::ascii;
 
 using boost::spirit::utf8_symbol_type;
-
-enum carto_node_type
-{
-    CARTO_UNDEFINED,
-    CARTO_VARIABLE,
-    CARTO_MIXIN,
-    CARTO_STYLE,
-    CARTO_MAP_STYLE,
-    CARTO_FILTER,
-    CARTO_EXPRESSION,
-    CARTO_ATTRIBUTE,
-    CARTO_COLOR,
-    CARTO_FUNCTION,
-    CARTO_COMMENT
-};
 
 template<typename Iterator>
 struct carto_parser : qi::grammar< Iterator, utree::list_type(), ascii::space_type>
@@ -62,7 +47,6 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), ascii::space_ty
     mapnik::css_color_grammar<Iterator> css_color;
     phoenix::function<color_conv_impl> color_conv;
 
-    utf8_string_parser<Iterator> utf8;
     filter_parser<Iterator> filter_text;
     expression_parser<Iterator> expression_text;
         
@@ -72,7 +56,6 @@ struct carto_parser : qi::grammar< Iterator, utree::list_type(), ascii::space_ty
 
     carto_parser (std::string const& source, annotations_type& annotations)
       : carto_parser::base_type(start),
-        utf8(source),
         filter_text(source, annotations),
         expression_text(source, annotations),
         error(error_handler_type(source)),
