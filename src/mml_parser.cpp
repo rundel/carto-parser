@@ -105,9 +105,10 @@ void mml_parser::parse(mapnik::Map& map)
 
 void mml_parser::parse_map(mapnik::Map& map)
 {
-    //using spirit::utree_type;
     typedef utree::const_iterator iter;
     
+    mapnik::parameters& params = map.get_extra_parameters();
+
     utree const& root_node = tree.ast();
     
     BOOST_ASSERT(get_node_type(root_node) == JSON_OBJECT);
@@ -124,16 +125,16 @@ void mml_parser::parse_map(mapnik::Map& map)
         if (key == "srs") {
             map.set_srs( as<std::string>(value) );
         } else if (key == "Stylesheet") {
-            BOOST_ASSERT(get_node_type(value) == json_array);
+            BOOST_ASSERT(get_node_type(value) == JSON_ARRAY);
             parse_stylesheet(map, value);
         } else if (key == "Layer") {
-            BOOST_ASSERT(get_node_type(value) == json_array);
+            BOOST_ASSERT(get_node_type(value) == JSON_ARRAY);
         
             iter lyr_it  = value.begin(), 
                  lyr_end = value.end();
         
             for (; lyr_it != lyr_end; ++lyr_it) {
-                BOOST_ASSERT(get_node_type(*lyr_it) == json_object);
+                BOOST_ASSERT(get_node_type(*lyr_it) == JSON_OBJECT);
                 parse_layer(map, (*lyr_it).front()) ;
             }
         } else {
