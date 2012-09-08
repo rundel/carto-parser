@@ -39,7 +39,10 @@ void carto_error::set_location(source_location const& loc)
 
 void carto_error::set_filename(std::string const& filename)
 {
-    file_ = filename;
+    if (file_.empty())
+      file_ = filename;
+    else
+      file_ = file_ + " -> " + filename;
 }
 
 void warn(carto_error const& err) 
