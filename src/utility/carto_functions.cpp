@@ -207,7 +207,8 @@ utree mix(utree const& col1, utree const& col2, utree const& weight)
 }
 
 
-utree greyscale(utree const& rgb) {
+utree greyscale(utree const& rgb)
+{
     return desaturate(rgb, 100);
 }
 

@@ -27,10 +27,6 @@ struct utree_to_string {
         return boost::lexical_cast<std::string>(val);
     }
     
-    std::string operator() (spirit::utf8_string_range_type const& str);
-
-    std::string operator() (spirit::utf8_symbol_range_type const& str);
-    
     template<typename Iterator>
     std::string operator() (boost::iterator_range<Iterator> const& range){
         BOOST_ASSERT(false);
@@ -38,14 +34,12 @@ struct utree_to_string {
         return std::string();
     }
 
+    std::string operator() (spirit::utf8_string_range_type const& str);
+    std::string operator() (spirit::utf8_symbol_range_type const& str);
     std::string operator() (utree::invalid_type ut);
-
     std::string operator() (utree::nil_type ut);
-
     std::string operator() (spirit::binary_range_type const& str);
-
     std::string operator() (spirit::any_ptr const& p);
-
     std::string operator() (spirit::function_base const& pf);
 };
 

@@ -26,36 +26,18 @@ struct hsl
 };
 
 utree test(utree const& rgb);
-
 utree hue(utree const& rgb);
-
 utree saturation(utree const& rgb);
-
 utree lightness(utree const& rgb);
-
 utree alpha(utree const& rgb);
-
 utree saturate(utree const& rgb, utree const& value) ;
-
 utree desaturate(utree const& rgb, utree const& value);
-
 utree lighten(utree const& rgb, utree const& value);
-
 utree darken(utree const& rgb, utree const& value);
-
 utree fadein(utree const& rgb, utree const& value);
-
 utree fadeout(utree const& rgb, utree const& value);
-
 utree spin(utree const& rgb, utree const& value);
-
-//
-// Copyright (c) 2006-2009 Hampton Catlin, Nathan Weizenbaum, and Chris Eppstein
-// http://sass-lang.com
-//
 utree mix(utree const& col1, utree const& col2, utree const& weight);
-
-
 utree greyscale(utree const& rgb);
 
 }
